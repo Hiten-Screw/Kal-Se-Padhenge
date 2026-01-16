@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXPENSE TRACKER</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
 
@@ -36,15 +38,30 @@
         #btn {
             align-items: center;
         }
+
+
+
+        .page {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
     </style>
+
 </head>
+
 <body>
-    <div>
-        <img width="200" src="public\assets\image1.png" alt="logo">
-    </div>
-    <hr>
-    <div>
-        <div class="txt">
+
+
+    <!--logo-->
+    <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1>
+    <!--buttons on left side-->
+
+    <div class="page-login" class="page active">
+        <div align="center">
+            <img width="200" src="public\assets\image1.png" alt="logo">
             <h1 class="h">"No Awkward Remainders. Just Fair Splits."</h1>
             <span class="quotes">
                 <ul>
@@ -53,42 +70,83 @@
                     <li> "Split bills. Not bonds"</li>
                 </ul>
             </span>
-            <div>
-                <button id="btn">Continue with google</button>
-            </div>
+
+            <button onclick="loginWithGoogle()">Continue with google</button>
 
         </div>
-
     </div>
-    <!--logo-->
-   <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1> 
-    <!--buttons on left side-->
-    <div align="left">
-        <!--buttons-->
-        <button>Dashboard</button>
-        <button>Friends</button>
-        <hr>
+    <div id="nav" class="page">
+        <nav>
+            <!--buttons-->
+            <button onclick="navigateTo('page-dashboard')">Dashboard</button>
+            <button onclick="navigateTo('page-friends')">Friends</button>
+            <button onclick="navigateTo('page-settings')">Settings</button>
+        </nav>
+    </div>
+
+
+
+    <div class="page" id="page-dashboard">
+
+
+
         <!--Total kitna hai-->
         <h3>TOTAL BALANCE</h3>
         <p>NET CREDIT:Rs.1000</p>
+        <!--Right Section-->
+        <div align="right">
+            <p>Satyam:Rs.+500(Credit)</p>
+            <p>Abhi:Rs.-300(Debit)</p>
+            <p>Neha:Rs.+1200(Credit)</p>
+            <p>Pooja:Rs.-400(Debit)</p>
+        </div>
+        <!-- Bottom-left invest bhi karo bhai -->
+        <div align="left">
+            <h4>Investments:</h4>
+            <p>"Don’t save what is left after spending; spend what is left after saving." – Warren Buffett</p>
+            <p>"Investing is not about timing the market, it’s about time in the market." – Unknown</p>
+            <p>
+                <a href="https://groww.in/mutual-funds" target="_blank">Mutual Funds</a><br>
+                <a href="https://www.ibullion.in/" target="_blank">Gold</a><br>
+                <a href="https://www.coinbase.com/" target="_blank">Crypto</a>
+            </p>
+        </div>
+
+
+
     </div>
-    <!--Right Section-->
-    <div align="right">
-    <p>Satyam:Rs.+500(Credit)</p>
-    <p>Abhi:Rs.-300(Debit)</p>
-    <p>Neha:Rs.+1200(Credit)</p>
-    <p>Pooja:Rs.-400(Debit)</p>
-    </div>
-    <!-- Bottom-left invest bhi karo bhai -->
-    <div align="left">
-        <h4>Investments:</h4>
-         <p>"Don’t save what is left after spending; spend what is left after saving." – Warren Buffett</p>
-        <p>"Investing is not about timing the market, it’s about time in the market." – Unknown</p>
-        <p>
-            <a href="https://groww.in/mutual-funds" target="_blank">Mutual Funds</a><br>
-            <a href="https://www.ibullion.in/" target="_blank">Gold</a><br>
-            <a href="https://www.coinbase.com/" target="_blank">Crypto</a>
-        </p>
-    </div>
+    <section id="page-friends" class="page">
+        <h2>Your Groups</h2>
+        <ul>
+
+            <li>xyz(2 members)</li>
+            <li>abc (6 members)</li>
+        </ul>
+        <button>+ Create New Group</button>
+    </section>
+
+    <section id="page-settings" class="page">
+        <h2>User Profile</h2>
+        <p>Name: User Name</p>
+        <p>Email: user@example.com</p>
+        <hr>
+        <button style="color: red;">Delete Account</button>
+        <button>Logout</button>
+    </section>
+
+    <footer>
+        <div align="center">
+            <button id="voice-btn">Mic</button>
+            <input type="text" id="gemini-query" placeholder="Tell Gemini: I paid 500 for lunch with Abhi"
+                style="width: 60%;">
+            <button>Sync Expense</button>
+        </div>
+    </footer>
+
+
+
+    <script src="src/main.js">
+    </script>
 </body>
+
 </html>
