@@ -4,8 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXPENSE TRACKER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
+
+        .quotes {
+            font-family: "Baloo Bhai 2", sans-serif;
+        }
+
+        .h {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        .quotes ul li::before {
+            content: '✔';
+            color: #1ce0a2;
+            margin-right: 10px;
+
+        }
+
+        .quotes {
+            color: rgb(54, 153, 112);
+        }
+
+        .quotes ul {
+            list-style: none;
+            padding: 0;
+            margin: 30px;
+        }
+
+        #btn {
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
+    <div>
+        <img width="200" src="public\assets\image1.png" alt="logo">
+    </div>
+    <hr>
+    <div>
+        <div class="txt">
+            <h1 class="h">"No Awkward Remainders. Just Fair Splits."</h1>
+            <span class="quotes">
+                <ul>
+                    <li> "Keep friendships above finances."</li>
+                    <li> "Because every ₹ counts."</li>
+                    <li> "Split bills. Not bonds"</li>
+                </ul>
+            </span>
+            <div>
+                <button id="btn">Continue with google</button>
+            </div>
+
+        </div>
+
+    </div>
     <!--logo-->
    <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1> 
     <!--buttons on left side-->
