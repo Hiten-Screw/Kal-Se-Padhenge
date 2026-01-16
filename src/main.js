@@ -44,3 +44,15 @@ function navigateTo(pageId) {
     });
     document.getElementById(pageId).style.display = 'block';
 }
+
+
+//logout
+window.handleLogout = async function() {
+  const { error } = await supabaseClient.auth.signOut();
+  
+  if (error) {
+    console.error('Error logging out:', error.message);
+  } else {
+    window.location.reload(); 
+  }
+}
