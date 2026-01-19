@@ -48,6 +48,16 @@
         .active {
             display: block;
         }
+
+        .credit {
+            color: #1ce0a2;
+            /* Green for credit */
+        }
+
+        .debit {
+            color: #ff4d4d;
+            /* Red for debit */
+        }
     </style>
 
 </head>
@@ -92,14 +102,21 @@
 
         <!--Total kitna hai-->
         <h3>TOTAL BALANCE</h3>
-        <p>NET CREDIT:Rs.1000</p>
+        <p id="dashboard-net-balance">Loading...</p>
         <!--Right Section-->
-        <div align="right">
-            <p>Satyam:Rs.+500(Credit)</p>
-            <p>Abhi:Rs.-300(Debit)</p>
-            <p>Neha:Rs.+1200(Credit)</p>
-            <p>Pooja:Rs.-400(Debit)</p>
+        <div id="dashboard-friends-list" align="right">
+            <p>Loading details...</p>
         </div>
+        <!-- Quick Add Expense -->
+        <div style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px;">
+            <h4>Quick Add Expense</h4>
+            <input type="text" id="quick-name" placeholder="Friend Name (e.g. Abhi)" style="margin: 5px;">
+            <input type="number" id="quick-amount" placeholder="Amount (e.g. 50)" style="margin: 5px;">
+            <input type="text" id="quick-desc" placeholder="For (e.g. Tea)" style="margin: 5px;">
+            <br>
+            <button id="btn-quick-add" style="margin-top: 10px; background-color: #1ce0a2; color: white;">Pay</button>
+        </div>
+
         <!-- Bottom-left invest bhi karo bhai -->
         <div align="left">
             <h4>Investments:</h4>
@@ -127,8 +144,8 @@
 
     <section id="page-settings" class="page">
         <h2>User Profile</h2>
-        <p>Name: User Name</p>
-        <p>Email: user@example.com</p>
+        <p id="settings-username">Name: Loading...</p>
+        <p id="settings-email">Email: Loading...</p>
         <hr>
         <button style="color: red;">Delete Account</button>
         <button onclick="handleLogout()">Logout</button>
@@ -139,7 +156,7 @@
             <button id="voice-btn">Mic</button>
             <input type="text" id="gemini-query" placeholder="Tell Gemini: I paid 500 for lunch with Abhi"
                 style="width: 60%;">
-            <button>Sync Expense</button>
+            <button id="btn-sync-expense">Sync Expense</button>
         </div>
     </footer>
 
@@ -150,4 +167,3 @@
 </body>
 
 </html>
-
