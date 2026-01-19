@@ -18,15 +18,33 @@ async function initApp() {
 
         supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Check Session
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        console.log("Supabase Client initialized");
+        console.log("Current URL Hash:", window.location.hash);
+
+        // 1. Check Initial Session
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+        console.log("Initial Session Check:", session);
+        if (sessionError) console.error("Session Error:", sessionError);
 
         if (session) {
-            document.querySelector('.page-login').style.display = 'none';
-            document.getElementById('nav').style.display = 'block';
-            navigateTo('page-dashboard');
-            console.log("Logged in as:", session.user.email);
+            console.log("Valid session found. Switching to dashboard...");
+            handleLoginSuccess(session);
+        } else {
+            console.log("No active session found.");
         }
+
+        // 2. Listen for Auth Changes (e.g. after redirect)
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            console.log("Auth State Change:", event, session);
+            if (event === 'SIGNED_IN' && session) {
+                console.log("SIGNED_IN event received. Switching to dashboard...");
+                handleLoginSuccess(session);
+            } else if (event === 'SIGNED_OUT') {
+                console.log("User signed out.");
+                window.location.reload();
+            }
+        });
 
         // Event listener for Sync Expense
         const syncBtn = document.getElementById('btn-sync-expense');
@@ -47,9 +65,24 @@ async function initApp() {
     }
 }
 
+function handleLoginSuccess(session) {
+    document.querySelector('.page-login').style.display = 'none';
+    document.getElementById('nav').style.display = 'block';
+
+    // Only navigate if we are currently on the login page (or root) to avoid resetting navigation
+    const dashboard = document.getElementById('page-dashboard');
+    if (dashboard && dashboard.style.display !== 'block') {
+        navigateTo('page-dashboard');
+    }
+
+    console.log("Logged in as:", session.user.email);
+}
+
 async function loginWithGoogle() {
+    console.log("Login button clicked");
     if (!supabaseClient) {
-        alert("App not initialized.");
+        console.error("Supabase client not initialized yet.");
+        alert("App loading... please wait a moment and try again.");
         return;
     }
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
@@ -64,7 +97,7 @@ async function loginWithGoogle() {
         alert("Failed to connect to Google.");
     }
 }
-
+window.loginWithGoogle = loginWithGoogle;
 
 window.onload = initApp;
 
@@ -258,50 +291,25 @@ async function fetchSettingsData() {
             emailEl.textContent = `Email: ${session.user.email}`;
         }
 
-        // Fetch Username from Profile table
-        console.log("Fetching profile for user:", session.user.id);
-        const { data: profile, error } = await supabaseClient
-            .from('Profile')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        // Fetch Username via Backend API (to handle auto-creation securely)
+        console.log("Fetching profile via backend API...");
+        const userId = session.user.id;
+        const email = session.user.email;
 
-        console.log("Profile Data:", profile);
+        // Call backend API
+        const response = await fetch(`/api/profile?userId=${userId}&email=${email}`);
+        const profile = await response.json();
 
-        let displayProfile = profile;
+        console.log("Profile Data (Backend):", profile);
 
-        if (!profile && !error) {
-            // Case: No error (or specific PGRST116), but no data returned logic might vary. 
-            // Supabase .single() returns error code PGRST116 if no rows found.
-        }
-
-        // If error is "No rows found" (PGRST116) or data is null, try to create one
-        if ((error && error.code === 'PGRST116') || (!profile && !error)) {
-            console.log("No profile found. Creating one...");
-            const username = session.user.email.split('@')[0];
-
-            const { data: newProfile, error: createError } = await supabaseClient
-                .from('Profile')
-                .insert([
-                    { id: session.user.id, email: session.user.email, username: username }
-                ])
-                .select()
-                .single();
-
-            if (createError) {
-                console.error("Error creating auto-profile:", createError);
-            } else {
-                console.log("Auto-profile created:", newProfile);
-                displayProfile = newProfile;
-            }
-        } else if (error) {
-            console.error("Error fetching profile:", error);
+        if (profile.error) {
+            console.error("Error fetching profile from backend:", profile.error);
         }
 
         const usernameEl = document.getElementById('settings-username');
         if (usernameEl) {
-            if (displayProfile && displayProfile.username) {
-                usernameEl.textContent = `Name: ${displayProfile.username}`;
+            if (profile && profile.username) {
+                usernameEl.textContent = `Name: ${profile.username}`;
             } else {
                 usernameEl.textContent = `Name: (Not Set)`;
             }
@@ -322,4 +330,3 @@ window.handleLogout = async function () {
         window.location.reload();
     }
 }
-
