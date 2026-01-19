@@ -2,21 +2,39 @@
 let supabaseClient;
 let supabaseUrl;
 let supabaseKey;
+let initializationPromise = null;
 
 async function initApp() {
-    try {
-        const response = await fetch('/api/config');
-        const config = await response.json();
-        supabaseUrl = config.supabaseUrl;
-        supabaseKey = config.supabaseKey;
+    // Return cached promise if already initialized or initializing
+    if (initializationPromise) {
+        return initializationPromise;
+    }
 
-        if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
-            console.error("Invalid Supabase Configuration.");
-            alert("Configuration Error: Please update the .env file with your Supabase keys.");
-            return;
-        }
+    initializationPromise = (async () => {
+        try {
+            console.log("Starting app initialization...");
+            
+            // Fetch config with timeout
+            const configController = new AbortController();
+            const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
+            
+            const response = await fetch('/api/config', { signal: configController.signal });
+            clearTimeout(configTimeout);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch config: ${response.statusText}`);
+            }
+            
+            const config = await response.json();
+            console.log("Config received:", { url: config.supabaseUrl ? config.supabaseUrl.substring(0, 20) + '...' : 'undefined' });
+            
+            supabaseUrl = config.supabaseUrl;
+            supabaseKey = config.supabaseKey;
 
-        supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
+                console.error("Invalid Supabase Configuration.");
+                throw new Error("Invalid Supabase credentials in .env");
+            }
 
         console.log("Supabase Client initialized");
         console.log("Current URL Hash:", window.location.hash);
@@ -53,16 +71,23 @@ async function initApp() {
             syncBtn.addEventListener('click', handleSyncExpense);
         }
 
-        // Event listener for Quick Add
-        const quickBtn = document.getElementById('btn-quick-add');
-        if (quickBtn) {
-            quickBtn.removeEventListener('click', handleQuickAdd);
-            quickBtn.addEventListener('click', handleQuickAdd);
-        }
+            console.log("App initialization completed successfully");
 
-    } catch (error) {
-        console.error("Failed to initialize app:", error);
-    }
+        } catch (error) {
+            console.error("Failed to initialize app:", error);
+            // Show error state on button
+            const loginBtn = document.getElementById('btn');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Retry (Click to Retry)';
+            }
+            // Reset promise on error so we can retry
+            initializationPromise = null;
+            throw error;
+        }
+    })();
+
+    return initializationPromise;
 }
 
 function handleLoginSuccess(session) {
@@ -85,16 +110,25 @@ async function loginWithGoogle() {
         alert("App loading... please wait a moment and try again.");
         return;
     }
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.href
-        }
-    });
 
-    if (error) {
-        console.error("Login Error:", error.message);
-        alert("Failed to connect to Google.");
+    console.log("Attempting Google login...");
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.href
+            }
+        });
+
+        if (error) {
+            console.error("Login Error:", error.message);
+            alert("Failed to connect to Google: " + error.message);
+        } else {
+            console.log("Google login initiated successfully");
+        }
+    } catch (error) {
+        console.error("Login Exception:", error);
+        alert("An error occurred during login. Please try again.");
     }
 }
 window.loginWithGoogle = loginWithGoogle;
@@ -321,6 +355,211 @@ async function fetchSettingsData() {
 }
 
 //logout
+window.handleLogout = async function() {
+  const { error } = await supabaseClient.auth.signOut();
+  
+  if (error) {
+    console.error('Error logging out:', error.message);
+  } else {
+    window.location.reload(); 
+  }
+}
+
+/* =========================================================
+   SUPABASE SETUP
+   ========================================================= */
+
+/*
+  Supabase client is created in initApp() function above.
+  The supabaseClient variable is initialized when the app starts.
+*/
+
+
+/* =========================================================
+   SEARCH USERS
+   ========================================================= */
+
+/*
+  Runs when the "Search" button is clicked.
+  - Reads username from input
+  - Calls SQL search function
+  - Shows results on screen
+*/
+async function searchUsers() {
+
+    // Read text typed in the input field
+    const query = document.getElementById("searchInput").value;
+
+    // Clear old search results before showing new ones
+    document.getElementById("searchResults").innerHTML = "";
+
+    // Call PostgreSQL function using Supabase RPC
+    const { data, error } = await supabaseClient.rpc(
+        "search_users_by_username",   // SQL function name
+        { search_query: query }       // Function parameter
+    );
+
+    // If something goes wrong, show error and stop
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    // Loop through all users returned from database
+    data.forEach(user => {
+
+        // Create a new <li> element
+        const li = document.createElement("li");
+
+        // Add username and Invite button inside <li>
+        li.innerHTML = `
+            ${user.username}
+            <button onclick="inviteFriend('${user.id}')">
+                Invite
+            </button>
+        `;
+
+        // Add <li> to the search results list
+        document.getElementById("searchResults").appendChild(li);
+    });
+}
+
+
+/* =========================================================
+   INVITE FRIEND
+   ========================================================= */
+
+/*
+  Sends a friend request when "Invite" is clicked
+*/
+async function inviteFriend(targetId) {
+
+    // Get the currently logged-in user
+    const user = await supabaseClient.auth.getUser();
+
+    // Call SQL function to send invite
+    const { error } = await supabaseClient.rpc(
+        "invite_friend_by_id",
+        {
+            inviter_id: user.data.user.id, // sender
+            target_id: targetId             // receiver
+        }
+    );
+
+    // Show success or error message
+    if (error) {
+        alert(error.message);
+    } else {
+        alert("Friend request sent!");
+    }
+}
+
+
+/* =========================================================
+   LOAD FRIEND REQUESTS
+   ========================================================= */
+
+/*
+  Fetches all pending friend requests
+  for the logged-in user
+*/
+async function loadFriendRequests() {
+
+    // Get current user
+    const user = await supabaseClient.auth.getUser();
+
+    // Query Friends table for pending requests
+    const { data } = await supabaseClient
+        .from("Friends")
+        .select(
+            "id, user1_id, Profile:Profile!Friends_user1_id_fkey(username)"
+        )
+        .eq("user2_id", user.data.user.id) // requests sent to me
+        .eq("status", "pending");          // only pending ones
+
+    // Clear old list
+    document.getElementById("friendRequests").innerHTML = "";
+
+    // Show each request on the page
+    data.forEach(req => {
+
+        // Create list item
+        const li = document.createElement("li");
+
+        // Add username and action buttons
+        li.innerHTML = `
+            ${req.Profile.username}
+            <button onclick="acceptRequest('${req.id}')">
+                Accept
+            </button>
+            <button onclick="declineRequest('${req.id}')">
+                Decline
+            </button>
+        `;
+
+        // Add to requests list
+        document.getElementById("friendRequests").appendChild(li);
+    });
+}
+
+
+/* =========================================================
+   ACCEPT FRIEND REQUEST
+   ========================================================= */
+
+/*
+  Accepts a pending friend request
+*/
+async function acceptRequest(id) {
+
+    const { error } = await supabaseClient.rpc(
+        "accept_friendship",
+        { friendship_id: id }
+    );
+
+    // Show error or refresh list
+    if (error) {
+        alert(error.message);
+    } else {
+        loadFriendRequests();
+    }
+}
+
+
+/* =========================================================
+   DECLINE FRIEND REQUEST
+   ========================================================= */
+
+/*
+  Declines or cancels a friend request
+*/
+async function declineRequest(id) {
+
+    const { error } = await supabaseClient.rpc(
+        "decline_friendship",
+        { friendship_id: id }
+    );
+
+    // Show error or refresh list
+    if (error) {
+        alert(error.message);
+    } else {
+        loadFriendRequests();
+    }
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
+/*
+  Automatically load friend requests
+  when the page opens
+*/
+loadFriendRequests();
+
+
 window.handleLogout = async function () {
     const { error } = await supabaseClient.auth.signOut();
 
