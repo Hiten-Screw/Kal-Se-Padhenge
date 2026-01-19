@@ -115,6 +115,9 @@ function handleLoginSuccess(session) {
     }
 
     console.log("Logged in as:", session.user.email);
+
+    loadFriendsInSidebar() // Load friends in sidebar
+    loadFriendRequests() // Load friend requests on login
 }
 
 async function loginWithGoogle() {
@@ -478,41 +481,53 @@ async function inviteFriend(targetId) {
   for the logged-in user
 */
 async function loadFriendRequests() {
+    // Safety guard
+    if (!supabaseClient) {
+        console.warn("DEBUG: supabaseClient not ready yet.");
+        return;
+    }
 
-    // Get current user
-    const user = await supabaseClient.auth.getUser();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const myId = user.id;
 
-    // Query Friends table for pending requests
-    const { data } = await supabaseClient
-        .from("Friends")
-        .select(
-            "id, user1_id, Profile:Profile!Friends_user1_id_fkey(username)"
-        )
-        .eq("user2_id", user.data.user.id) // requests sent to me
-        .eq("status", "pending");          // only pending ones
+    // Simplified join: Let Supabase find the relationship automatically
+    const { data, error } = await supabaseClient
+        .from('Friends')
+        .select(`
+            id, 
+            status, 
+            user1_id, 
+            user2_id,
+            user1:user1_id(username),
+            user2:user2_id(username)
+        `)
+        .eq('status', 'pending')
+        .or(`user1_id.eq.${myId},user2_id.eq.${myId}`);
 
-    // Clear old list
-    document.getElementById("friendRequests").innerHTML = "";
+    if (error) {
+        console.error("Join Error:", error);
+        return;
+    }
 
-    // Show each request on the page
+    const ul = document.getElementById("friendRequests");
+    ul.innerHTML = "";
+
     data.forEach(req => {
-
-        // Create list item
         const li = document.createElement("li");
+        const isSender = req.user1_id === myId;
+        
+        // Use the joined data safely
+        const friendUsername = isSender ? req.user2?.username : req.user1?.username;
 
-        // Add username and action buttons
         li.innerHTML = `
-            ${req.Profile.username}
-            <button onclick="acceptRequest('${req.id}')">
-                Accept
-            </button>
-            <button onclick="declineRequest('${req.id}')">
-                Decline
-            </button>
+            ${friendUsername || 'Unknown User'} 
+            ${isSender ? 
+                `<span>(Waiting for them to accept)</span>` : 
+                `<button onclick="acceptRequest('${req.id}')">Accept</button>`
+            }
+            <button onclick="declineRequest('${req.id}')">${isSender ? 'Cancel' : 'Decline'}</button>
         `;
-
-        // Add to requests list
-        document.getElementById("friendRequests").appendChild(li);
+        ul.appendChild(li);
     });
 }
 
@@ -582,4 +597,101 @@ window.handleLogout = async function () {
     } else {
         window.location.reload();
     }
+}
+
+
+
+
+
+
+//-------------------------------------------------------------------------------
+// Function to fetch and display friends in the sidebar
+async function loadFriendsInSidebar() {
+    if (!supabaseClient) return;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const myId = session.user.id;
+
+    // Use the same "Safe Join" syntax that worked for requests
+    const { data: friends, error } = await supabaseClient
+        .from('Friends')
+        .select(`
+            id, 
+            user1_id, 
+            user2_id,
+            status,
+            user1:Profile!Friends_user1_id_fkey(id, username),
+            user2:Profile!Friends_user2_id_fkey(id, username)
+        `)
+        .eq('status', 'accepted')
+        .or(`user1_id.eq.${myId},user2_id.eq.${myId}`);
+
+    if (error) {
+        console.error("Friends Load Error:", error);
+        return;
+    }
+
+    const listEl = document.getElementById('friendsList');
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    friends.forEach(f => {
+        // Determine which side is the friend and which is ME
+        const isSender = f.user1_id === myId;
+        const friendProfile = isSender ? f.user2 : f.user1;
+
+        if (!friendProfile) return; // Skip if join failed
+
+        const li = document.createElement('li');
+        li.className = "friend-item";
+        li.innerHTML = `<span>${friendProfile.username}</span>`;
+        
+        li.onclick = () => {
+            document.querySelectorAll('.friend-item').forEach(el => el.classList.remove('active'));
+            li.classList.add('active');
+            showTransactionHistory(friendProfile.id, friendProfile.username);
+        };
+        
+        listEl.appendChild(li);
+    });
+}
+// Function to show transactions on the right side
+async function showTransactionHistory(friendId, friendUsername) {
+    document.getElementById('historyPlaceholder').style.display = 'none';
+    document.getElementById('historyContent').style.display = 'block';
+    document.getElementById('historyWithTitle').textContent = `History with ${friendUsername}`;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const myId = session.user.id;
+
+    // Query your Expenses table for records between you and this friend
+    const { data: expenses, error } = await supabaseClient
+        .from('Expenses')
+        .select('*')
+        .or(`and(payer_id.eq.${myId},receiver_id.eq.${friendId}),and(payer_id.eq.${friendId},receiver_id.eq.${myId})`)
+        .order('created_at', { ascending: false });
+
+    const container = document.getElementById('transactionList');
+    if (expenses.length === 0) {
+        container.innerHTML = "<p>No transactions yet.</p>";
+        return;
+    }
+
+    container.innerHTML = expenses.map(exp => {
+        const iPaid = exp.payer_id === myId;
+        const colorClass = iPaid ? 'credit' : 'debit';
+        const prefix = iPaid ? "You lent" : "You owe";
+        
+        return `
+            <div class="transaction-card ${exp.is_settled ? 'settled' : ''}">
+                <div class="info">
+                    <strong>${exp.description}</strong>
+                    <small>${new Date(exp.created_at).toLocaleDateString()}</small>
+                </div>
+                <div class="amount ${colorClass}">
+                    ${prefix} Rs.${exp.amount}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
