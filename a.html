@@ -1,0 +1,38 @@
+<!--Friends page-->
+<!--used as a section used for navigation navigationTo()-->
+<section id="page-friends" class="page active">
+<!--search users-->
+<h2>Find Friends</h2>
+<!--Input where user types-->
+<input
+    type="text"
+    id="searchInput"
+    placeholder="Enter username"
+>
+
+<!--button to search-->
+<button onclick="searchUsers()">Search</button>
+<!--Search results will be shown here-->
+<!--Each result will have an Invite button-->
+<ul id="searchResults"></ul>
+
+<hr>
+
+<h2>Friend Requests</h2>
+
+<!--Incoming requests-->
+<ul id="friendRequests">
+    <!-- Example request item -->
+    <!--
+    <li>
+        User123
+        <button onclick="acceptRequest('User123')">Accept</button>
+        <button onclick="declineRequest('User123')">Decline</button>
+    </li>
+    -->
+    </ul>
+    <hr>
+    <h2>Your Friends</h2>
+    <!--Accepted Friends-->
+    <ul id="friendsList"></ul>
+</section>
