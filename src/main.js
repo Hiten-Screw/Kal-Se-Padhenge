@@ -62,6 +62,7 @@ async function initApp() {
 
     } catch (error) {
         console.error("Failed to initialize app:", error);
+        alert("Critical Error: Failed to initialize app. Check console for details. " + error.message);
     }
 }
 
@@ -85,6 +86,10 @@ async function loginWithGoogle() {
         alert("App loading... please wait a moment and try again.");
         return;
     }
+
+    // DEBUG: Alert before attempt
+    // alert("Attempting to connect to Google Auth...");
+
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -94,7 +99,7 @@ async function loginWithGoogle() {
 
     if (error) {
         console.error("Login Error:", error.message);
-        alert("Failed to connect to Google.");
+        alert("Login Error: " + error.message);
     }
 }
 window.loginWithGoogle = loginWithGoogle;
@@ -330,3 +335,117 @@ window.handleLogout = async function () {
         window.location.reload();
     }
 }
+
+/* =========================================================
+   FRIENDS AND SEARCH LOGIC (CONSOLIDATED)
+   ========================================================= */
+
+async function searchUsers() {
+    if (!supabaseClient) return;
+    const queryEl = document.getElementById("searchInput");
+    if (!queryEl) return;
+    const query = queryEl.value;
+    const resultsEl = document.getElementById("searchResults");
+    if (resultsEl) resultsEl.innerHTML = "Searching...";
+
+    const { data, error } = await supabaseClient.rpc(
+        "search_users_by_username",
+        { search_query: query }
+    );
+
+    if (error) {
+        alert("Search error: " + error.message);
+        if (resultsEl) resultsEl.innerHTML = "";
+        return;
+    }
+
+    if (resultsEl) {
+        resultsEl.innerHTML = "";
+        data.forEach(user => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${user.username}
+                <button onclick="inviteFriend('${user.id}')">Invite</button>
+            `;
+            resultsEl.appendChild(li);
+        });
+    }
+}
+
+async function inviteFriend(targetId) {
+    if (!supabaseClient) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        alert("You must be logged in to invite friends.");
+        return;
+    }
+
+    const { error } = await supabaseClient.rpc(
+        "invite_friend_by_id",
+        {
+            inviter_id: user.id,
+            target_id: targetId
+        }
+    );
+
+    if (error) {
+        alert("Invite error: " + error.message);
+    } else {
+        alert("Friend request sent!");
+    }
+}
+
+async function loadFriendRequests() {
+    if (!supabaseClient) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabaseClient
+        .from("Friends")
+        .select("id, user1_id, Profile:Profile!Friends_user1_id_fkey(username)")
+        .eq("user2_id", user.id)
+        .eq("status", "pending");
+
+    if (error) {
+        console.error("Error loading friend requests:", error);
+        return;
+    }
+
+    const requestsEl = document.getElementById("friendRequests");
+    if (requestsEl) {
+        requestsEl.innerHTML = "";
+        data.forEach(req => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${req.Profile.username}
+                <button onclick="acceptRequest('${req.id}')">Accept</button>
+                <button onclick="declineRequest('${req.id}')">Decline</button>
+            `;
+            requestsEl.appendChild(li);
+        });
+    }
+}
+
+async function acceptRequest(id) {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.rpc("accept_friendship", { friendship_id: id });
+    if (error) alert(error.message);
+    else loadFriendRequests();
+}
+
+async function declineRequest(id) {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.rpc("decline_friendship", { friendship_id: id });
+    if (error) alert(error.message);
+    else loadFriendRequests();
+}
+
+// Ensure these are globally available for inline HTML onclick handlers
+window.searchUsers = searchUsers;
+window.inviteFriend = inviteFriend;
+window.acceptRequest = acceptRequest;
+window.declineRequest = declineRequest;
+window.loadFriendRequests = loadFriendRequests;
+window.handleLogout = handleLogout;
+
+
