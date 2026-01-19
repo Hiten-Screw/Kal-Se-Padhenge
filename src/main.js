@@ -13,63 +13,73 @@ async function initApp() {
     initializationPromise = (async () => {
         try {
             console.log("Starting app initialization...");
-            
+
             // Fetch config with timeout
             const configController = new AbortController();
             const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
-            
+
             const response = await fetch('/api/config', { signal: configController.signal });
             clearTimeout(configTimeout);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch config: ${response.statusText}`);
             }
-            
+
             const config = await response.json();
             console.log("Config received:", { url: config.supabaseUrl ? config.supabaseUrl.substring(0, 20) + '...' : 'undefined' });
-            
+
             supabaseUrl = config.supabaseUrl;
             supabaseKey = config.supabaseKey;
+
 
             if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
                 console.error("Invalid Supabase Configuration.");
                 throw new Error("Invalid Supabase credentials in .env");
             }
 
-        console.log("Supabase Client initialized");
-        console.log("Current URL Hash:", window.location.hash);
+            // Initialize Supabase Client
+            // Note: 'supabase' global comes from the CDN script in index.html
+            supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 1. Check Initial Session
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            console.log("Supabase Client initialized");
+            console.log("Current URL Hash:", window.location.hash);
 
-        console.log("Initial Session Check:", session);
-        if (sessionError) console.error("Session Error:", sessionError);
+            // 1. Check Initial Session
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
 
-        if (session) {
-            console.log("Valid session found. Switching to dashboard...");
-            handleLoginSuccess(session);
-        } else {
-            console.log("No active session found.");
-        }
+            console.log("Initial Session Check:", session);
+            if (sessionError) console.error("Session Error:", sessionError);
 
-        // 2. Listen for Auth Changes (e.g. after redirect)
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            console.log("Auth State Change:", event, session);
-            if (event === 'SIGNED_IN' && session) {
-                console.log("SIGNED_IN event received. Switching to dashboard...");
+            if (session) {
+                console.log("Valid session found. Switching to dashboard...");
                 handleLoginSuccess(session);
-            } else if (event === 'SIGNED_OUT') {
-                console.log("User signed out.");
-                window.location.reload();
+            } else {
+                console.log("No active session found.");
+                const loginBtn = document.getElementById('btn');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login with Google';
+                }
             }
-        });
 
-        // Event listener for Sync Expense
-        const syncBtn = document.getElementById('btn-sync-expense');
-        if (syncBtn) {
-            syncBtn.removeEventListener('click', handleSyncExpense);
-            syncBtn.addEventListener('click', handleSyncExpense);
-        }
+            // 2. Listen for Auth Changes (e.g. after redirect)
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log("Auth State Change:", event, session);
+                if (event === 'SIGNED_IN' && session) {
+                    console.log("SIGNED_IN event received. Switching to dashboard...");
+                    handleLoginSuccess(session);
+                } else if (event === 'SIGNED_OUT') {
+                    console.log("User signed out.");
+                    window.location.reload();
+                }
+            });
+
+            // Event listener for Sync Expense
+            const syncBtn = document.getElementById('btn-sync-expense');
+            if (syncBtn) {
+                syncBtn.removeEventListener('click', handleSyncExpense);
+                syncBtn.addEventListener('click', handleSyncExpense);
+            }
 
             console.log("App initialization completed successfully");
 
@@ -93,6 +103,10 @@ async function initApp() {
 function handleLoginSuccess(session) {
     document.querySelector('.page-login').style.display = 'none';
     document.getElementById('nav').style.display = 'block';
+
+    // TRIGGER PROFILE CREATION IMMEDIATELY
+    // This ensures the user exists in the DB even if they don't visit Settings
+    console.log("Logged in as:", session.user.email);
 
     // Only navigate if we are currently on the login page (or root) to avoid resetting navigation
     const dashboard = document.getElementById('page-dashboard');
@@ -355,14 +369,14 @@ async function fetchSettingsData() {
 }
 
 //logout
-window.handleLogout = async function() {
-  const { error } = await supabaseClient.auth.signOut();
-  
-  if (error) {
-    console.error('Error logging out:', error.message);
-  } else {
-    window.location.reload(); 
-  }
+window.handleLogout = async function () {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        console.error('Error logging out:', error.message);
+    } else {
+        window.location.reload();
+    }
 }
 
 /* =========================================================
