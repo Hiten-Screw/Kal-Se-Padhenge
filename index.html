@@ -9,13 +9,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
 
+        body {
+            background-image: url('public/assets/backgrdimg.png');
+            background-position: center;
+            background-size: cover;
+            height: 100vh;
+        }
+
         .quotes {
             font-family: "Baloo Bhai 2", sans-serif;
+            font-size: 40px;
         }
 
         .h {
             font-family: Georgia, 'Times New Roman', Times, serif;
             font-style: italic;
+            font-size: 40px;
+            color: white;
         }
 
         .quotes ul li::before {
@@ -26,7 +36,7 @@
         }
 
         .quotes {
-            color: rgb(54, 153, 112);
+            color: rgb(11, 10, 0);
         }
 
         .quotes ul {
@@ -37,10 +47,44 @@
 
         #btn {
             align-items: center;
+            padding: 28px;
+            margin: auto;
+            font-size: 18px;
+            border-radius: 8px;
+            background-color: #2dd2d8;
+            font-weight: bolder;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
         }
 
-
-
+        #btn:hover {
+            background-color: #1462d0;
+        }
+        .logo {
+            display: block;
+            margin: 0 auto;
+        }
+        .dash-btn{
+            /* padding: 28px; */
+            margin-left: 18px;
+            font-size: 18px;
+            border-radius: 8px;
+            size: 28px;
+            font-weight: bold;
+            background-color: rgb(23, 78, 100);
+            color: wheat;
+        }
+        .dash-btn:hover{
+            background-color: rgb(53, 174, 222);
+        }
+        #Add_Friends{
+            height: 25px;
+            border-radius: 8px;
+        }
+        #Add-btn{
+            height: 30px;
+            border-radius: 8px;
+            background-color: #108a10;
+        }
         .page {
             display: none;
         }
@@ -56,13 +100,13 @@
 
 
     <!--logo-->
-    <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1>
+    <!-- <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1> -->
     <!--buttons on left side-->
 
     <div class="page-login" class="page active">
         <div align="center">
-            <img width="200" src="public\assets\image1.png" alt="logo">
-            <h1 class="h">"No Awkward Remainders. Just Fair Splits."</h1>
+            <img width="300" src="public\assets\image1.png" alt="logo">
+            <h1 class="h">"No Awkward Reminders. Just Fair Splits."</h1>
             <span class="quotes">
                 <ul>
                     <li> "Keep friendships above finances."</li>
@@ -71,16 +115,19 @@
                 </ul>
             </span>
 
-            <button onclick="loginWithGoogle()">Continue with google</button>
+            <button id="btn" onclick="loginWithGoogle()">Continue with google</button>
 
         </div>
     </div>
     <div id="nav" class="page">
-        <nav>
+        <div align="center">
+            <img width="300" src="public\assets\image1.png" alt="logo">
+        </div>
+        <nav >
             <!--buttons-->
-            <button onclick="navigateTo('page-dashboard')">Dashboard</button>
-            <button onclick="navigateTo('page-friends')">Friends</button>
-            <button onclick="navigateTo('page-settings')">Settings</button>
+            <button class="dash-btn" onclick="navigateTo('page-dashboard')">Dashboard</button>
+            <button class="dash-btn" onclick="navigateTo('page-friends')">Friends</button>
+            <button class="dash-btn" onclick="navigateTo('page-settings')">Settings</button>
         </nav>
     </div>
 
@@ -105,10 +152,19 @@
             <h4>Investments:</h4>
             <p>"Don’t save what is left after spending; spend what is left after saving." – Warren Buffett</p>
             <p>"Investing is not about timing the market, it’s about time in the market." – Unknown</p>
-            <p>
+            <!-- <p>
                 <a href="https://groww.in/mutual-funds" target="_blank">Mutual Funds</a><br>
                 <a href="https://www.ibullion.in/" target="_blank">Gold</a><br>
                 <a href="https://www.coinbase.com/" target="_blank">Crypto</a>
+            </p> -->
+             <p>
+                <a href="https://groww.in/mutual-funds" target="_blank"><img src='public\assets\stock.jpg' alt='mutual-funds'
+                        width='75px' height='75px'></a> Mutual Funds
+                <a href="https://www.ibullion.in/" target="_blank"><img src='public\assets\gold.jpg' alt='gold' width='75px'
+                        height='75px'></a> Gold
+                <a href="https://www.coinbase.com/" target="_blank"><img src='public\assets\crypto.jpg' alt='crypto' width='75px'
+                        height='75px'></a> Crypto
+                <br>
             </p>
         </div>
 
@@ -116,13 +172,18 @@
 
     </div>
     <section id="page-friends" class="page">
-        <h2>Your Groups</h2>
+        <h2>Your Friends</h2>
         <ul>
 
-            <li>xyz(2 members)</li>
-            <li>abc (6 members)</li>
+            <li>xyz</li>
+            <li>abc</li>
         </ul>
-        <button>+ Create New Group</button>
+       
+         <div>
+            <label for="Add New Friends">Add New Friends</label>
+        <input type="text" id="Add_Friends" name="Add New Friends" placeholder="Enter his username" autofocus>
+        <button id="Add-btn">ADD</button>    
+    </div>
     </section>
 
     <section id="page-settings" class="page">
@@ -134,7 +195,7 @@
         <button onclick="handleLogout()">Logout</button>
     </section>
 
-    <footer>
+    <footer  class="page">
         <div align="center">
             <button id="voice-btn">Mic</button>
             <input type="text" id="gemini-query" placeholder="Tell Gemini: I paid 500 for lunch with Abhi"
@@ -150,4 +211,3 @@
 </body>
 
 </html>
-
