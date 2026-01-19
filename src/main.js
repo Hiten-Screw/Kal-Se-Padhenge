@@ -2,66 +2,150 @@
 let supabaseClient;
 let supabaseUrl;
 let supabaseKey;
+let initializationPromise = null;
 
 async function initApp() {
-    try {
-        const response = await fetch('/api/config');
-        const config = await response.json();
-        supabaseUrl = config.supabaseUrl;
-        supabaseKey = config.supabaseKey;
-
-        if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
-            console.error("Invalid Supabase Configuration.");
-            alert("Configuration Error: Please update the .env file with your Supabase keys.");
-            return;
-        }
-
-        supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-        // Check Session
-        const { data: { session } } = await supabaseClient.auth.getSession();
-
-        if (session) {
-            document.querySelector('.page-login').style.display = 'none';
-            document.getElementById('nav').style.display = 'block';
-            navigateTo('page-dashboard');
-            console.log("Logged in as:", session.user.email);
-        }
-
-        // Event listener for Sync Expense
-        const syncBtn = document.getElementById('btn-sync-expense');
-        if (syncBtn) {
-            syncBtn.removeEventListener('click', handleSyncExpense);
-            syncBtn.addEventListener('click', handleSyncExpense);
-        }
-
-        // Event listener for Quick Add
-        const quickBtn = document.getElementById('btn-quick-add');
-        if (quickBtn) {
-            quickBtn.removeEventListener('click', handleQuickAdd);
-            quickBtn.addEventListener('click', handleQuickAdd);
-        }
-
-    } catch (error) {
-        console.error("Failed to initialize app:", error);
+    // Return cached promise if already initialized or initializing
+    if (initializationPromise) {
+        return initializationPromise;
     }
+
+    initializationPromise = (async () => {
+        try {
+            console.log("Starting app initialization...");
+            
+            // Fetch config with timeout
+            const configController = new AbortController();
+            const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
+            
+            const response = await fetch('/api/config', { signal: configController.signal });
+            clearTimeout(configTimeout);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch config: ${response.statusText}`);
+            }
+            
+            const config = await response.json();
+            console.log("Config received:", { url: config.supabaseUrl ? config.supabaseUrl.substring(0, 20) + '...' : 'undefined' });
+            
+            supabaseUrl = config.supabaseUrl;
+            supabaseKey = config.supabaseKey;
+
+            if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
+                console.error("Invalid Supabase Configuration.");
+                throw new Error("Invalid Supabase credentials in .env");
+            }
+
+            console.log("Creating Supabase client...");
+            supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            console.log("Supabase client initialized successfully");
+
+            // Check Session with timeout
+            console.log("Checking existing session...");
+            const sessionPromise = supabaseClient.auth.getSession();
+            const sessionController = new AbortController();
+            const sessionTimeout = setTimeout(() => sessionController.abort(), 5000); // 5 second timeout
+            
+            let session = null;
+            try {
+                const { data } = await Promise.race([
+                    sessionPromise,
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Session check timeout')), 5000)
+                    )
+                ]);
+                session = data?.session || null;
+                clearTimeout(sessionTimeout);
+            } catch (sessionError) {
+                console.warn("Session check timed out or failed:", sessionError.message);
+                clearTimeout(sessionTimeout);
+                // Continue even if session check fails
+            }
+
+            if (session) {
+                document.querySelector('.page-login').style.display = 'none';
+                document.getElementById('nav').style.display = 'block';
+                navigateTo('page-dashboard');
+                console.log("Logged in as:", session.user.email);
+            } else {
+                // Enable the login button
+                const loginBtn = document.getElementById('btn');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Continue with google';
+                    console.log("Login button enabled");
+                }
+            }
+
+            // Event listener for Sync Expense
+            const syncBtn = document.getElementById('btn-sync-expense');
+            if (syncBtn) {
+                syncBtn.removeEventListener('click', handleSyncExpense);
+                syncBtn.addEventListener('click', handleSyncExpense);
+            }
+
+            // Event listener for Quick Add
+            const quickBtn = document.getElementById('btn-quick-add');
+            if (quickBtn) {
+                quickBtn.removeEventListener('click', handleQuickAdd);
+                quickBtn.addEventListener('click', handleQuickAdd);
+            }
+
+            console.log("App initialization completed successfully");
+
+        } catch (error) {
+            console.error("Failed to initialize app:", error);
+            // Show error state on button
+            const loginBtn = document.getElementById('btn');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Retry (Click to Retry)';
+            }
+            // Reset promise on error so we can retry
+            initializationPromise = null;
+            throw error;
+        }
+    })();
+
+    return initializationPromise;
 }
 
 async function loginWithGoogle() {
+    // Wait for initialization to complete
     if (!supabaseClient) {
-        alert("App not initialized.");
+        console.log("Waiting for app initialization...");
+        try {
+            await initApp();
+        } catch (error) {
+            console.error("Initialization failed:", error);
+            alert("App failed to initialize. Please refresh the page.");
+            return;
+        }
+    }
+
+    if (!supabaseClient) {
+        alert("App failed to initialize. Please refresh the page.");
         return;
     }
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.href
-        }
-    });
 
-    if (error) {
-        console.error("Login Error:", error.message);
-        alert("Failed to connect to Google.");
+    console.log("Attempting Google login...");
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.href
+            }
+        });
+
+        if (error) {
+            console.error("Login Error:", error.message);
+            alert("Failed to connect to Google: " + error.message);
+        } else {
+            console.log("Google login initiated successfully");
+        }
+    } catch (error) {
+        console.error("Login Exception:", error);
+        alert("An error occurred during login. Please try again.");
     }
 }
 
@@ -328,10 +412,9 @@ window.handleLogout = async function() {
    ========================================================= */
 
 /*
-  Create a Supabase client so JavaScript can communicate
-  with Supabase (authentication + database).
+  Supabase client is created in initApp() function above.
+  The supabaseClient variable is initialized when the app starts.
 */
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 
 /* =========================================================
@@ -353,7 +436,7 @@ async function searchUsers() {
     document.getElementById("searchResults").innerHTML = "";
 
     // Call PostgreSQL function using Supabase RPC
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabaseClient.rpc(
         "search_users_by_username",   // SQL function name
         { search_query: query }       // Function parameter
     );
@@ -394,10 +477,10 @@ async function searchUsers() {
 async function inviteFriend(targetId) {
 
     // Get the currently logged-in user
-    const user = await supabase.auth.getUser();
+    const user = await supabaseClient.auth.getUser();
 
     // Call SQL function to send invite
-    const { error } = await supabase.rpc(
+    const { error } = await supabaseClient.rpc(
         "invite_friend_by_id",
         {
             inviter_id: user.data.user.id, // sender
@@ -425,10 +508,10 @@ async function inviteFriend(targetId) {
 async function loadFriendRequests() {
 
     // Get current user
-    const user = await supabase.auth.getUser();
+    const user = await supabaseClient.auth.getUser();
 
     // Query Friends table for pending requests
-    const { data } = await supabase
+    const { data } = await supabaseClient
         .from("Friends")
         .select(
             "id, user1_id, Profile:Profile!Friends_user1_id_fkey(username)"
@@ -471,7 +554,7 @@ async function loadFriendRequests() {
 */
 async function acceptRequest(id) {
 
-    const { error } = await supabase.rpc(
+    const { error } = await supabaseClient.rpc(
         "accept_friendship",
         { friendship_id: id }
     );
@@ -494,7 +577,7 @@ async function acceptRequest(id) {
 */
 async function declineRequest(id) {
 
-    const { error } = await supabase.rpc(
+    const { error } = await supabaseClient.rpc(
         "decline_friendship",
         { friendship_id: id }
     );
