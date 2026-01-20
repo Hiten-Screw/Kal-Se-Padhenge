@@ -391,17 +391,17 @@ window.handleLogout = async function () {
   The supabaseClient variable is initialized when the app starts.
 */
 
+    if (error) {
+        console.error('Error logging out:', error.message);
+    } else {
+        window.location.reload();
+    }
+}
 
 /* =========================================================
-   SEARCH USERS
+   FRIENDS AND SEARCH LOGIC (CONSOLIDATED)
    ========================================================= */
 
-/*
-  Runs when the "Search" button is clicked.
-  - Reads username from input
-  - Calls SQL search function
-  - Shows results on screen
-*/
 async function searchUsers() {
 
     // Read text typed in the input field
@@ -416,40 +416,32 @@ async function searchUsers() {
         { search_query: query }       // Function parameter
     );
 
-    // If something goes wrong, show error and stop
     if (error) {
-        alert(error.message);
+        alert("Search error: " + error.message);
+        if (resultsEl) resultsEl.innerHTML = "";
         return;
     }
 
-    // Loop through all users returned from database
-    data.forEach(user => {
-
-        // Create a new <li> element
-        const li = document.createElement("li");
-
-        // Add username and Invite button inside <li>
-        li.innerHTML = `
-            ${user.username}
-            <button onclick="inviteFriend('${user.id}')">
-                Invite
-            </button>
-        `;
-
-        // Add <li> to the search results list
-        document.getElementById("searchResults").appendChild(li);
-    });
+    if (resultsEl) {
+        resultsEl.innerHTML = "";
+        data.forEach(user => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${user.username}
+                <button onclick="inviteFriend('${user.id}')">Invite</button>
+            `;
+            resultsEl.appendChild(li);
+        });
+    }
 }
 
-
-/* =========================================================
-   INVITE FRIEND
-   ========================================================= */
-
-/*
-  Sends a friend request when "Invite" is clicked
-*/
 async function inviteFriend(targetId) {
+    if (!supabaseClient) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        alert("You must be logged in to invite friends.");
+        return;
+    }
 
     // Get the currently logged-in user
     const user = await supabaseClient.auth.getUser();
@@ -458,28 +450,18 @@ async function inviteFriend(targetId) {
     const { error } = await supabaseClient.rpc(
         "invite_friend_by_id",
         {
-            inviter_id: user.data.user.id, // sender
-            target_id: targetId             // receiver
+            inviter_id: user.id,
+            target_id: targetId
         }
     );
 
-    // Show success or error message
     if (error) {
-        alert(error.message);
+        alert("Invite error: " + error.message);
     } else {
         alert("Friend request sent!");
     }
 }
 
-
-/* =========================================================
-   LOAD FRIEND REQUESTS
-   ========================================================= */
-
-/*
-  Fetches all pending friend requests
-  for the logged-in user
-*/
 async function loadFriendRequests() {
     // Safety guard
     if (!supabaseClient) {
@@ -548,16 +530,9 @@ async function acceptRequest(id) {
 
     // Show error or refresh list
     if (error) {
-        alert(error.message);
-    } else {
-        loadFriendRequests();
+        console.error("Error loading friend requests:", error);
+        return;
     }
-}
-
-
-/* =========================================================
-   DECLINE FRIEND REQUEST
-   ========================================================= */
 
 /*
   Declines or cancels a friend request
@@ -577,27 +552,28 @@ async function declineRequest(id) {
     }
 }
 
-
-/* =========================================================
-   INITIAL LOAD
-   ========================================================= */
-
-/*
-  Automatically load friend requests
-  when the page opens
-*/
-loadFriendRequests();
-
-
-window.handleLogout = async function () {
-    const { error } = await supabaseClient.auth.signOut();
-
-    if (error) {
-        console.error('Error logging out:', error.message);
-    } else {
-        window.location.reload();
-    }
+async function acceptRequest(id) {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.rpc("accept_friendship", { friendship_id: id });
+    if (error) alert(error.message);
+    else loadFriendRequests();
 }
+
+async function declineRequest(id) {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.rpc("decline_friendship", { friendship_id: id });
+    if (error) alert(error.message);
+    else loadFriendRequests();
+}
+
+// Ensure these are globally available for inline HTML onclick handlers
+window.searchUsers = searchUsers;
+window.inviteFriend = inviteFriend;
+window.acceptRequest = acceptRequest;
+window.declineRequest = declineRequest;
+window.loadFriendRequests = loadFriendRequests;
+window.handleLogout = handleLogout;
+
 
 
 
