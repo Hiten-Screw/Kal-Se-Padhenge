@@ -59,11 +59,13 @@
         #btn:hover {
             background-color: #1462d0;
         }
+
         .logo {
             display: block;
             margin: 0 auto;
         }
-        .dash-btn{
+
+        .dash-btn {
             /* padding: 28px; */
             margin-left: 18px;
             font-size: 18px;
@@ -73,18 +75,22 @@
             background-color: rgb(23, 78, 100);
             color: wheat;
         }
-        .dash-btn:hover{
+
+        .dash-btn:hover {
             background-color: rgb(53, 174, 222);
         }
-        #Add_Friends{
+
+        #Add_Friends {
             height: 25px;
             border-radius: 8px;
         }
-        #Add-btn{
+
+        #Add-btn {
             height: 30px;
             border-radius: 8px;
             background-color: #108a10;
         }
+
         .page {
             display: none;
         }
@@ -134,7 +140,7 @@
         <div align="center">
             <img width="300" src="public\assets\image1.png" alt="logo">
         </div>
-        <nav >
+        <nav>
             <!--buttons-->
             <button class="dash-btn" onclick="navigateTo('page-dashboard')">Dashboard</button>
             <button class="dash-btn" onclick="navigateTo('page-friends')">Friends</button>
@@ -175,13 +181,13 @@
                 <a href="https://www.ibullion.in/" target="_blank">Gold</a><br>
                 <a href="https://www.coinbase.com/" target="_blank">Crypto</a>
             </p> -->
-             <p>
-                <a href="https://groww.in/mutual-funds" target="_blank"><img src='public\assets\stock.jpg' alt='mutual-funds'
-                        width='75px' height='75px'></a> Mutual Funds
-                <a href="https://www.ibullion.in/" target="_blank"><img src='public\assets\gold.jpg' alt='gold' width='75px'
-                        height='75px'></a> Gold
-                <a href="https://www.coinbase.com/" target="_blank"><img src='public\assets\crypto.jpg' alt='crypto' width='75px'
-                        height='75px'></a> Crypto
+            <p>
+                <a href="https://groww.in/mutual-funds" target="_blank"><img src='public\assets\stock.jpg'
+                        alt='mutual-funds' width='75px' height='75px'></a> Mutual Funds
+                <a href="https://www.ibullion.in/" target="_blank"><img src='public\assets\gold.jpg' alt='gold'
+                        width='75px' height='75px'></a> Gold
+                <a href="https://www.coinbase.com/" target="_blank"><img src='public\assets\crypto.jpg' alt='crypto'
+                        width='75px' height='75px'></a> Crypto
                 <br>
             </p>
         </div>
@@ -190,38 +196,38 @@
 
     </div>
     <section id="page-friends" class="page">
-  <div class="friends-header">
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Search users to invite...">
-      <button onclick="searchUsers()">Search</button>
-    </div>
-    <ul id="searchResults" class="search-dropdown"></ul>
-  </div>
+        <div class="friends-header">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search users to invite...">
+                <button onclick="searchUsers()">Search</button>
+            </div>
+            <ul id="searchResults" class="search-dropdown"></ul>
+        </div>
 
-  <div class="friends-container">
-    <aside class="friends-sidebar">
-      <div class="sidebar-section">
-        <h3>Pending Requests</h3>
-        <ul id="friendRequests" class="list-styled"></ul>
-      </div>
-      
-      <div class="sidebar-section">
-        <h3>Your Friends</h3>
-        <ul id="friendsList" class="list-styled"></ul>
-      </div>
-    </aside>
+        <div class="friends-container">
+            <aside class="friends-sidebar">
+                <div class="sidebar-section">
+                    <h3>Pending Requests</h3>
+                    <ul id="friendRequests" class="list-styled"></ul>
+                </div>
 
-    <main class="transaction-history" id="historyView">
-      <div id="historyPlaceholder" class="empty-state">
-        <p>Select a friend to view your history with them.</p>
-      </div>
-      <div id="historyContent" style="display: none;">
-        <h2 id="historyWithTitle">History with ...</h2>
-        <div id="transactionList"></div>
-      </div>
-    </main>
-  </div>
-</section>
+                <div class="sidebar-section">
+                    <h3>Your Friends</h3>
+                    <ul id="friendsList" class="list-styled"></ul>
+                </div>
+            </aside>
+
+            <main class="transaction-history" id="historyView">
+                <div id="historyPlaceholder" class="empty-state">
+                    <p>Select a friend to view your history with them.</p>
+                </div>
+                <div id="historyContent" style="display: none;">
+                    <h2 id="historyWithTitle">History with ...</h2>
+                    <div id="transactionList"></div>
+                </div>
+            </main>
+        </div>
+    </section>
 
     <section id="page-settings" class="page">
         <h2>User Profile</h2>
@@ -232,7 +238,7 @@
         <button onclick="handleLogout()">Logout</button>
     </section>
 
-    <footer  class="page">
+    <footer class="page">
         <div align="center">
             <button id="voice-btn">Mic</button>
             <input type="text" id="gemini-query" placeholder="Tell Gemini: I paid 500 for lunch with Abhi"

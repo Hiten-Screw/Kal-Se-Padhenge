@@ -382,9 +382,7 @@ window.handleLogout = async function () {
     }
 }
 
-/* =========================================================
-   SUPABASE SETUP
-   ========================================================= */
+/*SUPABASE SETUP*/
 
 /*
   Supabase client is created in initApp() function above.
@@ -392,16 +390,7 @@ window.handleLogout = async function () {
 */
 
 
-/* =========================================================
-   SEARCH USERS
-   ========================================================= */
-
-/*
-  Runs when the "Search" button is clicked.
-  - Reads username from input
-  - Calls SQL search function
-  - Shows results on screen
-*/
+//    SEARCH USERS
 async function searchUsers() {
 
     // Read text typed in the input field
@@ -415,8 +404,6 @@ async function searchUsers() {
         "search_users_by_username",   // SQL function name
         { search_query: query }       // Function parameter
     );
-
-    // If something goes wrong, show error and stop
     if (error) {
         alert(error.message);
         return;
@@ -442,13 +429,7 @@ async function searchUsers() {
 }
 
 
-/* =========================================================
-   INVITE FRIEND
-   ========================================================= */
-
-/*
-  Sends a friend request when "Invite" is clicked
-*/
+//INVITE FRIEND
 async function inviteFriend(targetId) {
 
     // Get the currently logged-in user
@@ -472,14 +453,7 @@ async function inviteFriend(targetId) {
 }
 
 
-/* =========================================================
-   LOAD FRIEND REQUESTS
-   ========================================================= */
-
-/*
-  Fetches all pending friend requests
-  for the logged-in user
-*/
+//LOAD FRIEND REQUESTS
 async function loadFriendRequests() {
     // Safety guard
     if (!supabaseClient) {
@@ -532,13 +506,8 @@ async function loadFriendRequests() {
 }
 
 
-/* =========================================================
-   ACCEPT FRIEND REQUEST
-   ========================================================= */
+//ACCEPT FRIEND REQUEST
 
-/*
-  Accepts a pending friend request
-*/
 async function acceptRequest(id) {
 
     const { error } = await supabaseClient.rpc(
@@ -555,13 +524,7 @@ async function acceptRequest(id) {
 }
 
 
-/* =========================================================
-   DECLINE FRIEND REQUEST
-   ========================================================= */
-
-/*
-  Declines or cancels a friend request
-*/
+//DECLINE FRIEND REQUEST
 async function declineRequest(id) {
 
     const { error } = await supabaseClient.rpc(
@@ -577,15 +540,7 @@ async function declineRequest(id) {
     }
 }
 
-
-/* =========================================================
-   INITIAL LOAD
-   ========================================================= */
-
-/*
-  Automatically load friend requests
-  when the page opens
-*/
+//INITIAL LOAD
 loadFriendRequests();
 
 
