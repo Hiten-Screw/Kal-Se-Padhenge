@@ -559,7 +559,7 @@ window.handleLogout = async function () {
 
 
 
-//-------------------------------------------------------------------------------
+
 // Function to fetch and display friends in the sidebar
 async function loadFriendsInSidebar() {
     if (!supabaseClient) return;
