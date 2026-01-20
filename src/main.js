@@ -2,73 +2,111 @@
 let supabaseClient;
 let supabaseUrl;
 let supabaseKey;
+let initializationPromise = null;
 
 async function initApp() {
-    try {
-        const response = await fetch('/api/config');
-        const config = await response.json();
-        supabaseUrl = config.supabaseUrl;
-        supabaseKey = config.supabaseKey;
-
-        if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
-            console.error("Invalid Supabase Configuration.");
-            alert("Configuration Error: Please update the .env file with your Supabase keys.");
-            return;
-        }
-
-        supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-        console.log("Supabase Client initialized");
-        console.log("Current URL Hash:", window.location.hash);
-
-        // 1. Check Initial Session
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-
-        console.log("Initial Session Check:", session);
-        if (sessionError) console.error("Session Error:", sessionError);
-
-        if (session) {
-            console.log("Valid session found. Switching to dashboard...");
-            handleLoginSuccess(session);
-        } else {
-            console.log("No active session found.");
-        }
-
-        // 2. Listen for Auth Changes (e.g. after redirect)
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            console.log("Auth State Change:", event, session);
-            if (event === 'SIGNED_IN' && session) {
-                console.log("SIGNED_IN event received. Switching to dashboard...");
-                handleLoginSuccess(session);
-            } else if (event === 'SIGNED_OUT') {
-                console.log("User signed out.");
-                window.location.reload();
-            }
-        });
-
-        // Event listener for Sync Expense
-        const syncBtn = document.getElementById('btn-sync-expense');
-        if (syncBtn) {
-            syncBtn.removeEventListener('click', handleSyncExpense);
-            syncBtn.addEventListener('click', handleSyncExpense);
-        }
-
-        // Event listener for Quick Add
-        const quickBtn = document.getElementById('btn-quick-add');
-        if (quickBtn) {
-            quickBtn.removeEventListener('click', handleQuickAdd);
-            quickBtn.addEventListener('click', handleQuickAdd);
-        }
-
-    } catch (error) {
-        console.error("Failed to initialize app:", error);
-        alert("Critical Error: Failed to initialize app. Check console for details. " + error.message);
+    // Return cached promise if already initialized or initializing
+    if (initializationPromise) {
+        return initializationPromise;
     }
+
+    initializationPromise = (async () => {
+        try {
+            console.log("Starting app initialization...");
+
+            // Fetch config with timeout
+            const configController = new AbortController();
+            const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
+
+            const response = await fetch('/api/config', { signal: configController.signal });
+            clearTimeout(configTimeout);
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch config: ${response.statusText}`);
+            }
+
+            const config = await response.json();
+            console.log("Config received:", { url: config.supabaseUrl ? config.supabaseUrl.substring(0, 20) + '...' : 'undefined' });
+
+            supabaseUrl = config.supabaseUrl;
+            supabaseKey = config.supabaseKey;
+
+
+            if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
+                console.error("Invalid Supabase Configuration.");
+                throw new Error("Invalid Supabase credentials in .env");
+            }
+
+            // Initialize Supabase Client
+            // Note: 'supabase' global comes from the CDN script in index.html
+            supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+            console.log("Supabase Client initialized");
+            console.log("Current URL Hash:", window.location.hash);
+
+            // 1. Check Initial Session
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+            console.log("Initial Session Check:", session);
+            if (sessionError) console.error("Session Error:", sessionError);
+
+            if (session) {
+                console.log("Valid session found. Switching to dashboard...");
+                handleLoginSuccess(session);
+            } else {
+                console.log("No active session found.");
+                const loginBtn = document.getElementById('btn');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login with Google';
+                }
+            }
+
+            // 2. Listen for Auth Changes (e.g. after redirect)
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log("Auth State Change:", event, session);
+                if (event === 'SIGNED_IN' && session) {
+                    console.log("SIGNED_IN event received. Switching to dashboard...");
+                    handleLoginSuccess(session);
+                } else if (event === 'SIGNED_OUT') {
+                    console.log("User signed out.");
+                    window.location.reload();
+                }
+            });
+
+            // Event listener for Sync Expense
+            const syncBtn = document.getElementById('btn-sync-expense');
+            if (syncBtn) {
+                syncBtn.removeEventListener('click', handleSyncExpense);
+                syncBtn.addEventListener('click', handleSyncExpense);
+            }
+
+            console.log("App initialization completed successfully");
+
+        } catch (error) {
+            console.error("Failed to initialize app:", error);
+            // Show error state on button
+            const loginBtn = document.getElementById('btn');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Retry (Click to Retry)';
+            }
+            // Reset promise on error so we can retry
+            initializationPromise = null;
+            throw error;
+        }
+    })();
+
+    return initializationPromise;
 }
 
 function handleLoginSuccess(session) {
     document.querySelector('.page-login').style.display = 'none';
     document.getElementById('nav').style.display = 'block';
+
+    // TRIGGER PROFILE CREATION IMMEDIATELY
+    // This ensures the user exists in the DB even if they don't visit Settings
+    console.log("Logged in as:", session.user.email);
 
     // Only navigate if we are currently on the login page (or root) to avoid resetting navigation
     const dashboard = document.getElementById('page-dashboard');
@@ -77,6 +115,9 @@ function handleLoginSuccess(session) {
     }
 
     console.log("Logged in as:", session.user.email);
+
+    loadFriendsInSidebar() // Load friends in sidebar
+    loadFriendRequests() // Load friend requests on login
 }
 
 async function loginWithGoogle() {
@@ -87,19 +128,24 @@ async function loginWithGoogle() {
         return;
     }
 
-    // DEBUG: Alert before attempt
-    // alert("Attempting to connect to Google Auth...");
+    console.log("Attempting Google login...");
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.href
+            }
+        });
 
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.href
+        if (error) {
+            console.error("Login Error:", error.message);
+            alert("Failed to connect to Google: " + error.message);
+        } else {
+            console.log("Google login initiated successfully");
         }
-    });
-
-    if (error) {
-        console.error("Login Error:", error.message);
-        alert("Login Error: " + error.message);
+    } catch (error) {
+        console.error("Login Exception:", error);
+        alert("An error occurred during login. Please try again.");
     }
 }
 window.loginWithGoogle = loginWithGoogle;
@@ -337,20 +383,37 @@ window.handleLogout = async function () {
 }
 
 /* =========================================================
+   SUPABASE SETUP
+   ========================================================= */
+
+/*
+  Supabase client is created in initApp() function above.
+  The supabaseClient variable is initialized when the app starts.
+*/
+
+    if (error) {
+        console.error('Error logging out:', error.message);
+    } else {
+        window.location.reload();
+    }
+}
+
+/* =========================================================
    FRIENDS AND SEARCH LOGIC (CONSOLIDATED)
    ========================================================= */
 
 async function searchUsers() {
-    if (!supabaseClient) return;
-    const queryEl = document.getElementById("searchInput");
-    if (!queryEl) return;
-    const query = queryEl.value;
-    const resultsEl = document.getElementById("searchResults");
-    if (resultsEl) resultsEl.innerHTML = "Searching...";
 
+    // Read text typed in the input field
+    const query = document.getElementById("searchInput").value;
+
+    // Clear old search results before showing new ones
+    document.getElementById("searchResults").innerHTML = "";
+
+    // Call PostgreSQL function using Supabase RPC
     const { data, error } = await supabaseClient.rpc(
-        "search_users_by_username",
-        { search_query: query }
+        "search_users_by_username",   // SQL function name
+        { search_query: query }       // Function parameter
     );
 
     if (error) {
@@ -380,6 +443,10 @@ async function inviteFriend(targetId) {
         return;
     }
 
+    // Get the currently logged-in user
+    const user = await supabaseClient.auth.getUser();
+
+    // Call SQL function to send invite
     const { error } = await supabaseClient.rpc(
         "invite_friend_by_id",
         {
@@ -396,33 +463,92 @@ async function inviteFriend(targetId) {
 }
 
 async function loadFriendRequests() {
-    if (!supabaseClient) return;
+    // Safety guard
+    if (!supabaseClient) {
+        console.warn("DEBUG: supabaseClient not ready yet.");
+        return;
+    }
+
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+    const myId = user.id;
 
+    // Simplified join: Let Supabase find the relationship automatically
     const { data, error } = await supabaseClient
-        .from("Friends")
-        .select("id, user1_id, Profile:Profile!Friends_user1_id_fkey(username)")
-        .eq("user2_id", user.id)
-        .eq("status", "pending");
+        .from('Friends')
+        .select(`
+            id, 
+            status, 
+            user1_id, 
+            user2_id,
+            user1:user1_id(username),
+            user2:user2_id(username)
+        `)
+        .eq('status', 'pending')
+        .or(`user1_id.eq.${myId},user2_id.eq.${myId}`);
 
+    if (error) {
+        console.error("Join Error:", error);
+        return;
+    }
+
+    const ul = document.getElementById("friendRequests");
+    ul.innerHTML = "";
+
+    data.forEach(req => {
+        const li = document.createElement("li");
+        const isSender = req.user1_id === myId;
+        
+        // Use the joined data safely
+        const friendUsername = isSender ? req.user2?.username : req.user1?.username;
+
+        li.innerHTML = `
+            ${friendUsername || 'Unknown User'} 
+            ${isSender ? 
+                `<span>(Waiting for them to accept)</span>` : 
+                `<button onclick="acceptRequest('${req.id}')">Accept</button>`
+            }
+            <button onclick="declineRequest('${req.id}')">${isSender ? 'Cancel' : 'Decline'}</button>
+        `;
+        ul.appendChild(li);
+    });
+}
+
+
+/* =========================================================
+   ACCEPT FRIEND REQUEST
+   ========================================================= */
+
+/*
+  Accepts a pending friend request
+*/
+async function acceptRequest(id) {
+
+    const { error } = await supabaseClient.rpc(
+        "accept_friendship",
+        { friendship_id: id }
+    );
+
+    // Show error or refresh list
     if (error) {
         console.error("Error loading friend requests:", error);
         return;
     }
 
-    const requestsEl = document.getElementById("friendRequests");
-    if (requestsEl) {
-        requestsEl.innerHTML = "";
-        data.forEach(req => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-                ${req.Profile.username}
-                <button onclick="acceptRequest('${req.id}')">Accept</button>
-                <button onclick="declineRequest('${req.id}')">Decline</button>
-            `;
-            requestsEl.appendChild(li);
-        });
+/*
+  Declines or cancels a friend request
+*/
+async function declineRequest(id) {
+
+    const { error } = await supabaseClient.rpc(
+        "decline_friendship",
+        { friendship_id: id }
+    );
+
+    // Show error or refresh list
+    if (error) {
+        alert(error.message);
+    } else {
+        loadFriendRequests();
     }
 }
 
@@ -449,3 +575,99 @@ window.loadFriendRequests = loadFriendRequests;
 window.handleLogout = handleLogout;
 
 
+
+
+
+
+
+//-------------------------------------------------------------------------------
+// Function to fetch and display friends in the sidebar
+async function loadFriendsInSidebar() {
+    if (!supabaseClient) return;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const myId = session.user.id;
+
+    // Use the same "Safe Join" syntax that worked for requests
+    const { data: friends, error } = await supabaseClient
+        .from('Friends')
+        .select(`
+            id, 
+            user1_id, 
+            user2_id,
+            status,
+            user1:Profile!Friends_user1_id_fkey(id, username),
+            user2:Profile!Friends_user2_id_fkey(id, username)
+        `)
+        .eq('status', 'accepted')
+        .or(`user1_id.eq.${myId},user2_id.eq.${myId}`);
+
+    if (error) {
+        console.error("Friends Load Error:", error);
+        return;
+    }
+
+    const listEl = document.getElementById('friendsList');
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    friends.forEach(f => {
+        // Determine which side is the friend and which is ME
+        const isSender = f.user1_id === myId;
+        const friendProfile = isSender ? f.user2 : f.user1;
+
+        if (!friendProfile) return; // Skip if join failed
+
+        const li = document.createElement('li');
+        li.className = "friend-item";
+        li.innerHTML = `<span>${friendProfile.username}</span>`;
+        
+        li.onclick = () => {
+            document.querySelectorAll('.friend-item').forEach(el => el.classList.remove('active'));
+            li.classList.add('active');
+            showTransactionHistory(friendProfile.id, friendProfile.username);
+        };
+        
+        listEl.appendChild(li);
+    });
+}
+// Function to show transactions on the right side
+async function showTransactionHistory(friendId, friendUsername) {
+    document.getElementById('historyPlaceholder').style.display = 'none';
+    document.getElementById('historyContent').style.display = 'block';
+    document.getElementById('historyWithTitle').textContent = `History with ${friendUsername}`;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const myId = session.user.id;
+
+    // Query your Expenses table for records between you and this friend
+    const { data: expenses, error } = await supabaseClient
+        .from('Expenses')
+        .select('*')
+        .or(`and(payer_id.eq.${myId},receiver_id.eq.${friendId}),and(payer_id.eq.${friendId},receiver_id.eq.${myId})`)
+        .order('created_at', { ascending: false });
+
+    const container = document.getElementById('transactionList');
+    if (expenses.length === 0) {
+        container.innerHTML = "<p>No transactions yet.</p>";
+        return;
+    }
+
+    container.innerHTML = expenses.map(exp => {
+        const iPaid = exp.payer_id === myId;
+        const colorClass = iPaid ? 'credit' : 'debit';
+        const prefix = iPaid ? "You lent" : "You owe";
+        
+        return `
+            <div class="transaction-card ${exp.is_settled ? 'settled' : ''}">
+                <div class="info">
+                    <strong>${exp.description}</strong>
+                    <small>${new Date(exp.created_at).toLocaleDateString()}</small>
+                </div>
+                <div class="amount ${colorClass}">
+                    ${prefix} Rs.${exp.amount}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
