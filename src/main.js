@@ -382,9 +382,7 @@ window.handleLogout = async function () {
     }
 }
 
-/* =========================================================
-   SUPABASE SETUP
-   ========================================================= */
+/*SUPABASE SETUP*/
 
 /*
   Supabase client is created in initApp() function above.
@@ -514,13 +512,8 @@ async function loadFriendRequests() {
 }
 
 
-/* =========================================================
-   ACCEPT FRIEND REQUEST
-   ========================================================= */
+//ACCEPT FRIEND REQUEST
 
-/*
-  Accepts a pending friend request
-*/
 async function acceptRequest(id) {
 
     const { error } = await supabaseClient.rpc(
@@ -580,7 +573,7 @@ window.handleLogout = handleLogout;
 
 
 
-//-------------------------------------------------------------------------------
+
 // Function to fetch and display friends in the sidebar
 async function loadFriendsInSidebar() {
     if (!supabaseClient) return;
