@@ -18,7 +18,7 @@ async function initApp() {
             const configController = new AbortController();
             const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
 
-            const response = await fetch('/api/config', { signal: configController.signal });
+            const response = await fetch('/.netlify/functions/config', { signal: configController.signal });
             clearTimeout(configTimeout);
 
             if (!response.ok) {
