@@ -378,6 +378,7 @@ window.handleLogout = async function () {
     if (error) {
         console.error('Error logging out:', error.message);
     } else {
+        window.location.reload();
     }
 };
 
