@@ -43,28 +43,16 @@ async function initApp() {
 
             console.log("Supabase Client initialized");
             console.log("Current URL Hash:", window.location.hash);
+            console.log("Current URL Search:", window.location.search);
 
-            // 1. Check Initial Session
-            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-
-            console.log("Initial Session Check:", session);
-            if (sessionError) console.error("Session Error:", sessionError);
-
-            if (session) {
-                console.log("Valid session found. Switching to dashboard...");
-                handleLoginSuccess(session);
-            } else {
-                console.log("No active session found.");
-                const loginBtn = document.getElementById('btn');
-                if (loginBtn) {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Login with Google';
-                }
-            }
-
-            // 2. Listen for Auth Changes (e.g. after redirect)
-            supabaseClient.auth.onAuthStateChange((event, session) => {
+            // 1. Listen for Auth Changes logic FIRST
+            const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log("Auth State Change:", event, session);
+
+                // Show debug info on login page if stuck
+                const debugEl = document.getElementById('login-debug');
+                if (debugEl) debugEl.textContent = `Auth Event: ${event}`;
+
                 if (event === 'SIGNED_IN' && session) {
                     console.log("SIGNED_IN event received. Switching to dashboard...");
                     handleLoginSuccess(session);
@@ -73,6 +61,37 @@ async function initApp() {
                     window.location.reload();
                 }
             });
+
+            // 2. Check Initial Session
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+            console.log("Initial Session Check:", session);
+            if (sessionError) console.error("Session Error:", sessionError);
+
+            if (session) {
+                console.log("Valid session found via getSession. Switching to dashboard...");
+                handleLoginSuccess(session);
+            } else {
+                console.log("No active session found.");
+
+                // Check if we have hash/code but no session yet (processing)
+                if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+                    console.log("Redirect detected. Waiting for auth state change...");
+                    const loginBtn = document.getElementById('btn');
+                    if (loginBtn) {
+                        loginBtn.textContent = 'Finalizing Login...';
+                        loginBtn.disabled = true;
+                    }
+                } else {
+                    const loginBtn = document.getElementById('btn');
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = 'Login with Google';
+                    }
+                }
+            }
+
+            // (Auth listener moved up)
 
             // Event listener for Sync Expense
             const syncBtn = document.getElementById('btn-sync-expense');
@@ -128,23 +147,37 @@ async function loginWithGoogle() {
         return;
     }
 
+    const loginBtn = document.getElementById('btn');
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+    }
+
     console.log("Attempting Google login...");
     try {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.href
+                redirectTo: window.location.origin
             }
         });
 
         if (error) {
             console.error("Login Error:", error.message);
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login with Google';
+            }
             alert("Failed to connect to Google: " + error.message);
         } else {
             console.log("Google login initiated successfully");
         }
     } catch (error) {
         console.error("Login Exception:", error);
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Login with Google';
+        }
         alert("An error occurred during login. Please try again.");
     }
 }
@@ -389,13 +422,6 @@ window.handleLogout = async function () {
   The supabaseClient variable is initialized when the app starts.
 */
 
-    if (error) {
-        console.error('Error logging out:', error.message);
-    } else {
-        window.location.reload();
-    }
-}
-
 /* =========================================================
    FRIENDS AND SEARCH LOGIC (CONSOLIDATED)
    ========================================================= */
@@ -440,9 +466,6 @@ async function inviteFriend(targetId) {
         alert("You must be logged in to invite friends.");
         return;
     }
-
-    // Get the currently logged-in user
-    const user = await supabaseClient.auth.getUser();
 
     // Call SQL function to send invite
     const { error } = await supabaseClient.rpc(
@@ -512,38 +535,7 @@ async function loadFriendRequests() {
 }
 
 
-//ACCEPT FRIEND REQUEST
 
-async function acceptRequest(id) {
-
-    const { error } = await supabaseClient.rpc(
-        "accept_friendship",
-        { friendship_id: id }
-    );
-
-    // Show error or refresh list
-    if (error) {
-        console.error("Error loading friend requests:", error);
-        return;
-    }
-
-/*
-  Declines or cancels a friend request
-*/
-async function declineRequest(id) {
-
-    const { error } = await supabaseClient.rpc(
-        "decline_friendship",
-        { friendship_id: id }
-    );
-
-    // Show error or refresh list
-    if (error) {
-        alert(error.message);
-    } else {
-        loadFriendRequests();
-    }
-}
 
 async function acceptRequest(id) {
     if (!supabaseClient) return;
