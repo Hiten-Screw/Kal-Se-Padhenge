@@ -113,7 +113,7 @@ BEGIN
 
     --FRIEND NO FOUND
     IF target_id IS NULL THEN 
-        RAISE EXCEPTION 'User % not found in VocaSplit', target_username; 
+        RAISE EXCEPTION 'User % not found in IntelliDivide', target_username; 
     END IF;
 
     --PREVENT SELECTING YOURSELF

@@ -378,9 +378,8 @@ window.handleLogout = async function () {
     if (error) {
         console.error('Error logging out:', error.message);
     } else {
-        window.location.reload();
     }
-}
+};
 
 /*SUPABASE SETUP*/
 
@@ -489,14 +488,14 @@ async function loadFriendRequests() {
     data.forEach(req => {
         const li = document.createElement("li");
         const isSender = req.user1_id === myId;
-        
+
         // Use the joined data safely
         const friendUsername = isSender ? req.user2?.username : req.user1?.username;
 
         li.innerHTML = `
             ${friendUsername || 'Unknown User'} 
-            ${isSender ? 
-                `<span>(Waiting for them to accept)</span>` : 
+            ${isSender ?
+                `<span>(Waiting for them to accept)</span>` :
                 `<button onclick="acceptRequest('${req.id}')">Accept</button>`
             }
             <button onclick="declineRequest('${req.id}')">${isSender ? 'Cancel' : 'Decline'}</button>
@@ -544,15 +543,7 @@ async function declineRequest(id) {
 loadFriendRequests();
 
 
-window.handleLogout = async function () {
-    const { error } = await supabaseClient.auth.signOut();
 
-    if (error) {
-        console.error('Error logging out:', error.message);
-    } else {
-        window.location.reload();
-    }
-}
 
 
 
@@ -600,13 +591,13 @@ async function loadFriendsInSidebar() {
         const li = document.createElement('li');
         li.className = "friend-item";
         li.innerHTML = `<span>${friendProfile.username}</span>`;
-        
+
         li.onclick = () => {
             document.querySelectorAll('.friend-item').forEach(el => el.classList.remove('active'));
             li.classList.add('active');
             showTransactionHistory(friendProfile.id, friendProfile.username);
         };
-        
+
         listEl.appendChild(li);
     });
 }
@@ -636,7 +627,7 @@ async function showTransactionHistory(friendId, friendUsername) {
         const iPaid = exp.payer_id === myId;
         const colorClass = iPaid ? 'credit' : 'debit';
         const prefix = iPaid ? "You lent" : "You owe";
-        
+
         return `
             <div class="transaction-card ${exp.is_settled ? 'settled' : ''}">
                 <div class="info">
