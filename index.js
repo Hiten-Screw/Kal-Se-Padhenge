@@ -14,7 +14,7 @@ console.log("DEBUG: Supabase Key starts with:", supabaseKey ? supabaseKey.substr
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Serve static files from the root directory
+
 app.use(express.static(path.join(__dirname)))
 app.use(express.json())
 
@@ -22,12 +22,11 @@ app.use(express.json())
 app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_KEY // IMPORTANT: User should ensure this is the ANON key if exposing to frontend
+    supabaseKey: process.env.SUPABASE_KEY
   });
 });
 
-// Middleware to extract user ID from query (simple auth for demo)
-// Ideally, verify the JWT token from headers
+
 const getUserId = (req) => {
   return req.query.userId;
 }
@@ -132,7 +131,7 @@ app.post('/api/expense', async (req, res) => {
       description = bodyDesc;
       targetUsername = bodyTarget;
     } else if (query) {
-      // Regex Parser: "I paid 500 for lunch with Abhi"
+      //  "I paid 500 for lunch with Abhi"
       const regex = /paid\s+(\d+)\s+for\s+(.+?)\s+with\s+(.+)/i;
       const match = query.match(regex);
 
@@ -211,7 +210,7 @@ app.get('/api/profile', async (req, res) => {
   }
 })
 
-// Fallback to index.html for SPA handling if needed (optional for now since we just serve root)
+
 app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 })
