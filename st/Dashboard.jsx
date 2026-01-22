@@ -2,7 +2,7 @@ import React from "react";
 import logo from "./assets/image1.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FiPlusCircle, FiUsers, FiDollarSign } from "react-icons/fi";
-import "./App.css";
+import "../css/style.css";
 
 function Dashboard({ dark, setDark }) {
   return (

@@ -12,3 +12,17 @@ GRANT SELECT (email) ON public."Profile" TO authenticated;
 
 -- 4. Allow users to ONLY update their username (prevents tampering with IDs/Emails)
 GRANT UPDATE (username) ON public."Profile" TO authenticated;
+
+-- ==========================================
+-- EXPENSES TABLE - RLS INSERT POLICY
+-- ==========================================
+-- This policy allows authenticated users to INSERT new expenses
+-- where they are the payer
+
+CREATE POLICY "Enable users to insert their own expenses"
+ON public."Expenses"
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  auth.uid() = payer_id
+);
