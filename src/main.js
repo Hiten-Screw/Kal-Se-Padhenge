@@ -14,84 +14,97 @@ async function initApp() {
         try {
             console.log("Starting app initialization...");
 
-            // Fetch config with timeout
-            const configController = new AbortController();
-            const configTimeout = setTimeout(() => configController.abort(), 10000); // 10 second timeout
+            let supabaseUrl, supabaseKey;
 
-            const response = await fetch('/.netlify/functions/config', { signal: configController.signal });
-            clearTimeout(configTimeout);
+            // Try to fetch config from Netlify function (works with netlify dev)
+            try {
+                const configController = new AbortController();
+                const configTimeout = setTimeout(() => configController.abort(), 5000); // 5 second timeout
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch config: ${response.statusText}`);
+                const response = await fetch('/.netlify/functions/config', { signal: configController.signal });
+                clearTimeout(configTimeout);
+
+                if (response.ok) {
+                    const config = await response.json();
+                    console.log("✅ Config loaded from Netlify function");
+                    supabaseUrl = config.supabaseUrl;
+                    supabaseKey = config.supabaseKey;
+                } else {
+                    throw new Error("Netlify config endpoint not available");
+                }
+            } catch (netlifyError) {
+                console.log("ℹ️  Netlify function not available, trying /api/config...");
+                
+                // Try alternative API endpoint
+                try {
+                    const response = await fetch('/api/config', { signal: AbortSignal.timeout(5000) });
+                    if (response.ok) {
+                        const config = await response.json();
+                        console.log("✅ Config loaded from /api/config");
+                        supabaseUrl = config.supabaseUrl;
+                        supabaseKey = config.supabaseKey;
+                    } else {
+                        throw new Error("API config not available");
+                    }
+                } catch (apiError) {
+                    console.log("ℹ️  API config not available, checking for inline config...");
+                    // Fallback: Check if config is available in window object
+                    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+                        supabaseUrl = window.SUPABASE_URL;
+                        supabaseKey = window.SUPABASE_KEY;
+                        console.log("✅ Using inline Supabase config from index.html");
+                    } else {
+                        throw new Error("❌ No Supabase configuration found");
+                    }
+                }
             }
 
-            const config = await response.json();
-            console.log("Config received:", { url: config.supabaseUrl ? config.supabaseUrl.substring(0, 20) + '...' : 'undefined' });
-
-            supabaseUrl = config.supabaseUrl;
-            supabaseKey = config.supabaseKey;
-
+            console.log("Config received:", { url: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'undefined' });
 
             if (!supabaseUrl || !supabaseKey || supabaseKey.includes('YOUR_SUPABASE')) {
-                console.error("Invalid Supabase Configuration.");
-                throw new Error("Invalid Supabase credentials in .env");
+                console.error("❌ Invalid Supabase Configuration.");
+                throw new Error("Invalid or missing Supabase credentials");
             }
 
             // Initialize Supabase Client
             // Note: 'supabase' global comes from the CDN script in index.html
             supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-            console.log("Supabase Client initialized");
+            console.log("✅ Supabase Client initialized");
             console.log("Current URL Hash:", window.location.hash);
             console.log("Current URL Search:", window.location.search);
 
-            // 1. Listen for Auth Changes logic FIRST
-            const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log("Auth State Change:", event, session);
-
-                // Show debug info on login page if stuck
-                const debugEl = document.getElementById('login-debug');
-                if (debugEl) debugEl.textContent = `Auth Event: ${event}`;
-
-                if (event === 'SIGNED_IN' && session) {
-                    console.log("SIGNED_IN event received. Switching to dashboard...");
-                    handleLoginSuccess(session);
-                } else if (event === 'SIGNED_OUT') {
-                    console.log("User signed out.");
-                    window.location.reload();
-                }
-            });
-
-            // 2. Check Initial Session
+            // 1. Check Initial Session
             const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
 
             console.log("Initial Session Check:", session);
             if (sessionError) console.error("Session Error:", sessionError);
 
             if (session) {
-                console.log("Valid session found via getSession. Switching to dashboard...");
+                console.log("✅ Valid session found. Switching to dashboard...");
                 handleLoginSuccess(session);
             } else {
-                console.log("No active session found.");
-
-                // Check if we have hash/code but no session yet (processing)
-                if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-                    console.log("Redirect detected. Waiting for auth state change...");
-                    const loginBtn = document.getElementById('btn');
-                    if (loginBtn) {
-                        loginBtn.textContent = 'Finalizing Login...';
-                        loginBtn.disabled = true;
-                    }
+                console.log("ℹ️  No active session found.");
+                const loginBtn = document.getElementById('btn');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login with Google';
                 } else {
-                    const loginBtn = document.getElementById('btn');
-                    if (loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = 'Login with Google';
-                    }
+                    console.warn("⚠️  Login button not found in DOM");
                 }
             }
 
-            // (Auth listener moved up)
+            // 2. Listen for Auth Changes (e.g. after redirect)
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log("Auth State Change:", event, session);
+                if (event === 'SIGNED_IN' && session) {
+                    console.log("✅ SIGNED_IN event received. Switching to dashboard...");
+                    handleLoginSuccess(session);
+                } else if (event === 'SIGNED_OUT') {
+                    console.log("ℹ️  User signed out.");
+                    window.location.reload();
+                }
+            });
 
             // Event listener for Sync Expense
             const syncBtn = document.getElementById('btn-sync-expense');
@@ -100,15 +113,15 @@ async function initApp() {
                 syncBtn.addEventListener('click', handleSyncExpense);
             }
 
-            console.log("App initialization completed successfully");
+            console.log("✅ App initialization completed successfully");
 
         } catch (error) {
-            console.error("Failed to initialize app:", error);
+            console.error("❌ Failed to initialize app:", error);
             // Show error state on button
             const loginBtn = document.getElementById('btn');
             if (loginBtn) {
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'Retry (Click to Retry)';
+                loginBtn.textContent = 'Setup Required (Click for Help)';
             }
             // Reset promise on error so we can retry
             initializationPromise = null;
@@ -190,50 +203,91 @@ async function handleQuickAdd() {
     const amountInput = document.getElementById('quick-amount');
     const descInput = document.getElementById('quick-desc');
 
-    const name = nameInput.value;
-    const amount = amountInput.value;
-    const desc = descInput.value;
+    const friendUsername = nameInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const description = descInput.value.trim();
 
-    if (!name || !amount || !desc) {
-        alert("Please fill all fields (Name, Amount, Description)");
+    if (!friendUsername || !amount || !description) {
+        alert("❌ Please fill all fields (Friend Name, Amount, Description)");
+        return;
+    }
+
+    if (amount <= 0) {
+        alert("❌ Amount must be greater than 0");
         return;
     }
 
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) {
-            alert("You must be logged in.");
+            alert("❌ You must be logged in.");
             return;
         }
 
-        const response = await fetch('/api/expense', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: session.user.id,
-                targetUsername: name,
-                amount: amount,
-                description: desc
-            })
-        });
+        const userId = session.user.id;
 
-        const result = await response.json();
+        // Step 1: Get friend's ID by username
+        const { data: friendProfiles, error: friendError } = await supabaseClient
+            .from('Profile')
+            .select('id')
+            .eq('username', friendUsername)
+            .single();
 
-        if (response.ok) {
-            alert(result.message);
-            // Clear inputs
-            nameInput.value = '';
-            amountInput.value = '';
-            descInput.value = '';
-            // Refresh dashboard
-            fetchDashboardData();
-        } else {
-            alert("Error: " + result.error);
+        if (friendError) {
+            alert("❌ Friend not found");
+            return;
         }
 
+        const friendId = friendProfiles.id;
+
+        // Step 2: Verify they are accepted friends
+        const { data: friendships, error: friendshipError } = await supabaseClient
+            .from('Friends')
+            .select('status')
+            .eq('status', 'accepted')
+            .or(`and(user1_id.eq.${userId},user2_id.eq.${friendId}),and(user1_id.eq.${friendId},user2_id.eq.${userId})`)
+            .single();
+
+        if (friendshipError || !friendships) {
+            alert("❌ You are not friends with " + friendUsername);
+            return;
+        }
+
+        // Step 3: Create expense record (user is the payer)
+        const { data: expense, error: expenseError } = await supabaseClient
+            .from('Expenses')
+            .insert([
+                {
+                    payer_id: userId,
+                    receiver_id: friendId,
+                    amount: amount,
+                    description: description,
+                    created_at: new Date().toISOString()
+                }
+            ])
+            .select();
+
+        if (expenseError) {
+            console.error("Error creating expense:", expenseError);
+            alert("❌ Failed to add expense: " + expenseError.message);
+            return;
+        }
+
+        // Success!
+        alert("✅ Expense added successfully!");
+        
+        // Clear inputs
+        nameInput.value = '';
+        amountInput.value = '';
+        descInput.value = '';
+        document.getElementById('quick-add-section').style.display = 'none';
+        
+        // Refresh dashboard
+        await fetchDashboardData();
+        
     } catch (error) {
         console.error("Error adding expense:", error);
-        alert("Failed to add expense.");
+        alert("❌ Error: " + error.message);
     }
 }
 
@@ -306,35 +360,101 @@ function navigateTo(pageId) {
 async function fetchDashboardData() {
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
+        if (!session) {
+            console.log("No session found");
+            return;
+        }
         const userId = session.user.id;
 
-        const response = await fetch(`/api/dashboard?userId=${userId}`);
-        const data = await response.json();
+        console.log("Fetching dashboard data for user:", userId);
 
-        console.log("Dashboard Data:", data);
+        // Fetch user's total balance, amount owed, and amount they're owed
+        const { data: expenses, error: expensesError } = await supabaseClient
+            .from('Expenses')
+            .select('payer_id, receiver_id, amount')
+            .or(`payer_id.eq.${userId},receiver_id.eq.${userId}`);
 
-        // Update Net Balance
-        const netBalanceEl = document.getElementById('dashboard-net-balance');
-        if (netBalanceEl) {
-            const netCredit = parseFloat(data.netCredit);
-            const type = netCredit >= 0 ? 'Credit' : 'Debit';
-            const colorClass = netCredit >= 0 ? 'credit' : 'debit';
-            // Format: NET CREDIT: Rs. +1000 (Credit)
-            netBalanceEl.innerHTML = `NET CREDIT: <span class="${colorClass}">Rs.${netCredit > 0 ? '+' : ''}${netCredit} (${type})</span>`;
+        if (expensesError) {
+            console.error("Error fetching expenses:", expensesError);
+            return;
         }
 
-        // Update Friends List
-        const friendsListEl = document.getElementById('dashboard-friends-list');
-        if (friendsListEl && data.friends) {
-            if (data.friends.length === 0) {
-                friendsListEl.innerHTML = '<p>No active balances with friends.</p>';
+        // Calculate totals
+        let totalOwed = 0;      // Amount user owes to others
+        let totalCredited = 0;  // Amount others owe to user
+        const friendBalances = {};
+
+        expenses.forEach(expense => {
+            if (expense.payer_id === userId) {
+                // User is the payer (people owe them)
+                totalCredited += parseFloat(expense.amount);
+                const friendId = expense.receiver_id;
+                friendBalances[friendId] = (friendBalances[friendId] || 0) + parseFloat(expense.amount);
             } else {
-                friendsListEl.innerHTML = data.friends.map(f => {
-                    const amount = parseFloat(f.amount);
-                    const colorClass = amount >= 0 ? 'credit' : 'debit';
-                    return `<p>${f.name}: <span class="${colorClass}">Rs.${amount > 0 ? '+' : ''}${amount} (${f.type})</span></p>`;
-                }).join('');
+                // User is the receiver (owes to others)
+                totalOwed += parseFloat(expense.amount);
+                const friendId = expense.payer_id;
+                friendBalances[friendId] = (friendBalances[friendId] || 0) - parseFloat(expense.amount);
+            }
+        });
+
+        const netBalance = totalCredited - totalOwed;
+
+        console.log("Dashboard Totals:", { totalCredited, totalOwed, netBalance, friendBalances });
+
+        // Update dashboard elements
+        const totalBalanceEl = document.getElementById('dashboard-total-balance');
+        if (totalBalanceEl) {
+            totalBalanceEl.innerHTML = `₹${Math.abs(netBalance).toFixed(2)}`;
+            totalBalanceEl.style.color = netBalance >= 0 ? '#00c853' : '#ff5252';
+        }
+
+        const oweEl = document.getElementById('dashboard-owe');
+        if (oweEl) {
+            oweEl.innerHTML = `₹${totalOwed.toFixed(2)}`;
+        }
+
+        const owedEl = document.getElementById('dashboard-owed');
+        if (owedEl) {
+            owedEl.innerHTML = `₹${totalCredited.toFixed(2)}`;
+        }
+
+        // Fetch friend names and update friend balances
+        const friendsListEl = document.getElementById('dashboard-friends-list');
+        if (friendsListEl) {
+            const friendIds = Object.keys(friendBalances);
+            
+            if (friendIds.length === 0) {
+                friendsListEl.innerHTML = '<div class="activity"><span>No transactions yet</span><span class="green">Start by adding an expense!</span></div>';
+            } else {
+                // Fetch friend profiles
+                const { data: profiles, error: profileError } = await supabaseClient
+                    .from('Profile')
+                    .select('id, username')
+                    .in('id', friendIds);
+
+                if (profileError) {
+                    console.error("Error fetching friend profiles:", profileError);
+                    return;
+                }
+
+                const profileMap = {};
+                profiles.forEach(p => profileMap[p.id] = p.username);
+
+                let html = '';
+                friendIds.forEach(friendId => {
+                    const balance = friendBalances[friendId];
+                    const username = profileMap[friendId] || 'Unknown';
+                    const isPositive = balance >= 0;
+                    const color = isPositive ? 'green' : 'red';
+                    const text = isPositive ? `You are owed ₹${balance.toFixed(2)}` : `You owe ₹${Math.abs(balance).toFixed(2)}`;
+                    
+                    html += `<div class="activity">
+                        <span>${username}</span>
+                        <span class="${color}">${text}</span>
+                    </div>`;
+                });
+                friendsListEl.innerHTML = html;
             }
         }
 
@@ -345,21 +465,12 @@ async function fetchDashboardData() {
 
 async function fetchFriendsData() {
     try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
-        const userId = session.user.id;
-
-        const response = await fetch(`/api/friends?userId=${userId}`);
-        const data = await response.json();
-        console.log("Friends Data:", data);
-
-        const ul = document.querySelector('#page-friends ul');
-        if (ul && Array.isArray(data)) {
-            ul.innerHTML = data.map(group => `<li>${group.name}</li>`).join('');
-        }
-
+        // Reload friends list and requests
+        await loadFriendsInSidebar();
+        await loadFriendRequests();
+        console.log("✅ Friends data loaded");
     } catch (error) {
-        console.error("Error fetching friends data:", error);
+        console.error("❌ Error fetching friends data:", error);
     }
 }
 
@@ -375,19 +486,17 @@ async function fetchSettingsData() {
             emailEl.textContent = `Email: ${session.user.email}`;
         }
 
-        // Fetch Username via Backend API (to handle auto-creation securely)
-        console.log("Fetching profile via backend API...");
+        // Fetch user profile directly from Supabase
         const userId = session.user.id;
-        const email = session.user.email;
+        
+        const { data: profile, error: profileError } = await supabaseClient
+            .from('Profile')
+            .select('username')
+            .eq('id', userId)
+            .single();
 
-        // Call backend API
-        const response = await fetch(`/api/profile?userId=${userId}&email=${email}`);
-        const profile = await response.json();
-
-        console.log("Profile Data (Backend):", profile);
-
-        if (profile.error) {
-            console.error("Error fetching profile from backend:", profile.error);
+        if (profileError) {
+            console.error("Error fetching profile:", profileError);
         }
 
         const usernameEl = document.getElementById('settings-username');
@@ -432,7 +541,12 @@ async function searchUsers() {
     const query = document.getElementById("searchInput").value;
 
     // Clear old search results before showing new ones
-    document.getElementById("searchResults").innerHTML = "";
+    const resultsEl = document.getElementById("searchResults");
+    resultsEl.innerHTML = "";
+
+    if (!query || query.trim() === "") {
+        return;
+    }
 
     // Call PostgreSQL function using Supabase RPC
     const { data, error } = await supabaseClient.rpc(
@@ -441,21 +555,105 @@ async function searchUsers() {
     );
 
     if (error) {
-        alert("Search error: " + error.message);
-        if (resultsEl) resultsEl.innerHTML = "";
+        console.error("Search error:", error);
+        resultsEl.innerHTML = `<li class="text-danger">Error: ${error.message}</li>`;
         return;
     }
 
     if (resultsEl) {
         resultsEl.innerHTML = "";
-        data.forEach(user => {
+        if (data && data.length > 0) {
+            data.forEach(user => {
+                const li = document.createElement("li");
+                li.className = "list-group-item";
+                li.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${user.username}</span>
+                        <button class="btn btn-sm btn-primary" onclick="inviteFriend('${user.id}')">Invite</button>
+                    </div>
+                `;
+                resultsEl.appendChild(li);
+            });
+        } else {
             const li = document.createElement("li");
-            li.innerHTML = `
-                ${user.username}
-                <button onclick="inviteFriend('${user.id}')">Invite</button>
-            `;
+            li.className = "list-group-item text-muted";
+            li.innerHTML = "No users found.";
             resultsEl.appendChild(li);
+        }
+    }
+}
+
+async function searchFriendsForExpense(query) {
+    if (!supabaseClient) return;
+
+    const dropdown = document.getElementById('quick-friends-dropdown');
+    
+    if (!query || query.trim() === "") {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        const userId = session.user.id;
+
+        // Get all accepted friends
+        const { data: friendships, error: friendError } = await supabaseClient
+            .from('Friends')
+            .select(`
+                user1_id, 
+                user2_id,
+                user1:Profile!Friends_user1_id_fkey(id, username),
+                user2:Profile!Friends_user2_id_fkey(id, username)
+            `)
+            .eq('status', 'accepted')
+            .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+
+        if (friendError) {
+            console.error("Error fetching friends:", friendError);
+            return;
+        }
+
+        // Extract friend usernames and filter by search query
+        const friends = [];
+        friendships.forEach(f => {
+            const isSender = f.user1_id === userId;
+            const friendProfile = isSender ? f.user2 : f.user1;
+            if (friendProfile && friendProfile.username) {
+                friends.push(friendProfile);
+            }
         });
+
+        const filtered = friends.filter(f => 
+            f.username.toLowerCase().includes(query.toLowerCase())
+        );
+
+        // Display dropdown
+        dropdown.innerHTML = '';
+        if (filtered.length > 0) {
+            dropdown.style.display = 'block';
+            filtered.forEach(friend => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = friend.username;
+                li.style.cursor = 'pointer';
+                li.onclick = () => {
+                    document.getElementById('quick-name').value = friend.username;
+                    dropdown.style.display = 'none';
+                };
+                dropdown.appendChild(li);
+            });
+        } else {
+            dropdown.style.display = 'block';
+            const li = document.createElement('li');
+            li.className = 'list-group-item text-muted';
+            li.textContent = 'No accepted friends match';
+            dropdown.appendChild(li);
+        }
+    } catch (error) {
+        console.error("Error searching friends:", error);
     }
 }
 
@@ -553,11 +751,13 @@ async function declineRequest(id) {
 
 // Ensure these are globally available for inline HTML onclick handlers
 window.searchUsers = searchUsers;
+window.searchFriendsForExpense = searchFriendsForExpense;
 window.inviteFriend = inviteFriend;
 window.acceptRequest = acceptRequest;
 window.declineRequest = declineRequest;
 window.loadFriendRequests = loadFriendRequests;
 window.handleLogout = handleLogout;
+window.handleQuickAdd = handleQuickAdd;
 
 
 

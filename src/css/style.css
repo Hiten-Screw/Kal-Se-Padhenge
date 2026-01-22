@@ -1,10 +1,178 @@
+/* Fix the main container background */
 .friends-container {
   display: flex;
-  height: 80vh; /* Adjust based on your nav height */
+  height: 80vh;
   border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
+  /* Remove hardcoded background: white; */
+}
+
+#page-friends.dark .friends-container {
+  background: #1f1f1f !important;
+  border-color: #333;
+}
+
+/* If history background is dark, text MUST be white */
+#page-friends.dark .transaction-history {
+  background-color: #1f1f1f !important;
+}
+
+#page-friends.dark .transaction-card .info strong {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+#page-friends.dark .friend-item.active {
+  background-color: #007bff !important;
+  color: #ffffff !important;
+  border: 1px solid #0056b3 !important;
+}
+
+#page-friends.dark .transaction-card .info small {
+  color: #bbbbbb !important;
+  /* Light grey for the date */
+}
+
+/* --- DARK MODE SIDEBAR (White background in your inverted layout) --- */
+#page-friends.dark .friends-sidebar h3 {
+  color: #000000 !important;
+  /* Forces "Pending Requests" & "Your Friends" to Black */
+  font-weight: 800;
+  margin-bottom: 15px;
+}
+
+#page-friends.dark .friend-item,
+#page-friends.dark .list-group-item {
+  color: #1a1a1a !important;
+  /* Forces Friend Names to a very dark grey/black */
+  font-weight: 600;
+}
+
+/* --- LIGHT MODE SIDEBAR (Black background in your inverted layout) --- */
+#page-friends.light .friends-sidebar h3 {
+  color: #ffffff !important;
+  /* Forces Headers to White */
+  font-weight: 800;
+}
+
+#page-friends.light .friend-item,
+#page-friends.light .list-group-item {
+  color: #f0f0f0 !important;
+  /* Forces Friend Names to White */
+  font-weight: 600;
+}
+
+/* Ensure the 'Active' friend remains blue/visible regardless of the text color above */
+.friend-item.active {
+  color: #ffffff !important;
+  background-color: #007bff !important;
+}
+
+#page-friends.dark #historyWithTitle,
+#page-friends.dark #historyPlaceholder p {
+  color: #ffffff !important;
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+  /* Adds a slight shadow for extra pop */
+}
+
+body.app.light .friends-container {
   background: white;
+  border-color: #ddd;
+}
+
+/* If sidebar is white, text MUST be dark */
+#page-friends.dark .friends-sidebar {
+  background-color: #ffffff !important;
+}
+
+#page-friends.dark .friends-sidebar h3,
+#page-friends.dark .friends-sidebar .friend-item,
+#page-friends.dark .friends-sidebar .list-group-item {
+  color: #000000 !important;
+  /* Forces black text on the white sidebar */
+}
+
+#page-friends.dark {
+  background: linear-gradient(180deg, #1f1f1f, #0e0e0e);
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+#page-friends.light {
+  background: #f6f7fb;
+  color: black;
+  margin: 0;
+  padding: 0;
+}
+
+#page-friends .container {
+  margin-top: 0 !important;
+  padding-top: 20px !important;
+}
+
+/* Search Bar Styling for Friends Page */
+#page-friends.dark .friends-header {
+  background: #242424 !important;
+  color: white !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+#page-friends.light .friends-header {
+  background: white !important;
+  color: black !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
+}
+
+#page-friends.dark .friends-header .form-control {
+  background: #1f1f1f !important;
+  color: white !important;
+  border-color: #444 !important;
+}
+
+#page-friends.light .friends-header .form-control {
+  background: white !important;
+  color: black !important;
+  border-color: #ddd !important;
+}
+
+#page-friends.dark .friends-header .form-control::placeholder {
+  color: #aaa !important;
+}
+
+#page-friends.light .friends-header .form-control::placeholder {
+  color: #666 !important;
+}
+
+#page-friends.dark .friends-header .btn-secondary {
+  background: #1e90ff !important;
+  border-color: #1e90ff !important;
+  color: white !important;
+}
+
+#page-friends.dark .friends-header .input-group {
+  background: #242424 !important;
+  border: 1px solid #444 !important;
+}
+
+#page-friends.light .friends-header .input-group {
+  background: white !important;
+  border: 1px solid #ddd !important;
+}
+
+#page-friends.dark .friends-header .input-group svg {
+  color: #888 !important;
+}
+
+#page-friends.dark .search-dropdown {
+  background: #242424;
+  color: white;
+}
+
+#page-friends.light .search-dropdown {
+  background: white;
+  color: black;
 }
 
 /* Sidebar Styling */
@@ -17,9 +185,31 @@
   background-color: #f9f9fb;
 }
 
+/* Sidebar - Light Mode Fix */
+#page-friends.light .friends-sidebar {
+  background-color: #f9f9fb !important;
+  border-right-color: #eee !important;
+  color: black !important;
+}
+
 .sidebar-section {
   padding: 15px;
   border-bottom: 1px solid #eee;
+}
+
+#page-friends.dark .friends-sidebar {
+  background-color: #242424 !important;
+  border-right-color: #333 !important;
+  color: white !important;
+}
+
+/* Text inside Sidebar (Headings) */
+#page-friends.dark .sidebar-section h3 {
+  color: white !important;
+}
+
+#page-friends.light .sidebar-section h3 {
+  color: #333 !important;
 }
 
 /* Right Side History Area */
@@ -27,7 +217,25 @@
   flex-grow: 1;
   padding: 20px;
   overflow-y: auto;
-  background: #fff;
+  transition: background 0.3s ease;
+}
+
+
+#page-friends.dark .friends-container {
+  background: #1f1f1f !important;
+  border-color: #333;
+}
+
+/* History Container - Dark Mode Fix */
+#page-friends.dark .transaction-history {
+  background: #1f1f1f !important;
+  color: white !important;
+}
+
+/* History Container - Light Mode Fix */
+#page-friends.light .transaction-history {
+  background: white !important;
+  color: black !important;
 }
 
 /* Search Dropdown (floating overlay) */
@@ -37,7 +245,7 @@
   background: white;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   list-style: none;
   padding: 0;
 }
@@ -47,40 +255,613 @@
   padding: 10px;
   cursor: pointer;
   transition: background 0.2s;
+  font-weight: 500;
 }
-.friend-item:hover { background: #eef2ff; }
-.friend-item.active { background: #e0e7ff; font-weight: bold; }
+
+#page-friends.dark .list-group-item,
+#page-friends.dark .friend-item {
+  background-color: #242424 !important;
+  /* Slightly lighter than sidebar for contrast */
+  color: #eeeeee !important;
+  border-color: #333 !important;
+}
+
+/* 4. Fix the Hover/Active states in Sidebar */
+#page-friends.dark .friend-item:hover {
+  background-color: #333 !important;
+  color: #ffffff !important;
+}
+
+#page-friends.dark .friend-item.active {
+  background-color: #1e90ff !important;
+  /* Bright blue for the selected friend */
+  color: #ffffff !important;
+}
+
+#page-friends.light .friend-item {
+  color: #333 !important;
+  background: #f9f9fb !important;
+  border: 1px solid #ddd !important;
+  font-weight: 500;
+}
+
+.friend-item:hover {
+  background: #eef2ff;
+  font-weight: 600;
+}
+
+#page-friends.dark .friend-item:hover {
+  background: #2a2a2a !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+.friend-item.active {
+  background: #e0e7ff !important;
+  font-weight: bold;
+  color: #1e90ff !important;
+}
+
+#page-friends.dark .friend-item.active {
+  background: #1e90ff !important;
+  color: white !important;
+  font-weight: bold;
+}
+
+#page-friends.dark .list-group {
+  background: #242424 !important;
+  color: white !important;
+}
+
+#page-friends.light .list-group {
+  background: #f9f9fb !important;
+  color: #333 !important;
+}
+
+#page-friends.dark .list-group-item {
+  background: #242424 !important;
+  border-color: #333 !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+#page-friends.light .list-group-item {
+  background: #f9f9fb !important;
+  border-color: #ddd !important;
+  color: #333 !important;
+  font-weight: 500;
+}
 
 /* Styling for the history cards on the right side */
 .transaction-card {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    background: #fdfdfd;
-    border-left: 5px solid #ccc;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border-left: 5px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.3s ease;
 }
 
 .transaction-card.settled {
-    opacity: 0.6;
-    border-left-color: #9e9e9e;
-    background: #f5f5f5;
+  opacity: 0.6;
+  border-left-color: #9e9e9e;
+  background: #f5f5f5;
 }
 
 .transaction-card .amount.credit {
-    color: #2e7d32; /* Green for money lent */
-    font-weight: bold;
+  color: #2e7d32;
+  /* Green for money lent */
+  font-weight: bold;
 }
 
 .transaction-card .amount.debit {
-    color: #d32f2f; /* Red for money owed */
-    font-weight: bold;
+  color: #d32f2f;
+  /* Red for money owed */
+  font-weight: bold;
 }
 
 .transaction-card .info small {
-    display: block;
-    color: #757575;
-    margin-top: 4px;
+  display: block;
+  color: #757575;
+  margin-top: 4px;
+}
+
+/* ========== DASHBOARD STYLES ========== */
+
+/* GENERAL */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* LOGO */
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.app {
+  min-height: 100vh;
+  transition: all 0.3s ease;
+}
+
+.app.dark {
+  background: linear-gradient(180deg, #1f1f1f, #0e0e0e);
+  color: white;
+}
+
+.app.light {
+  background: #f6f7fb;
+  color: black;
+}
+
+/* STAT CARDS */
+.stat-card {
+  border-radius: 18px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.app.dark .stat-card {
+  background: #242424 !important;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.app.light .stat-card {
+  background: #ffffff !important;
+  color: black;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin-bottom: 4px;
+}
+
+.app.dark .title {
+  color: #aaa;
+}
+
+.app.light .title {
+  color: #666;
+}
+
+/* COLORS */
+.green {
+  color: #00c853;
+}
+
+.red {
+  color: #ff5252;
+}
+
+.blue {
+  color: #448aff;
+}
+
+/* ACTIVITY */
+.activity {
+  padding: 18px 22px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.app.dark .activity {
+  background: #242424;
+}
+
+.app.dark .activity:hover {
+  background: #2d2d2d;
+}
+
+.app.light .activity {
+  background: #ffffff !important;
+  color: black;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== GENERAL STYLES ========== */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* ===== APP THEME ===== */
+.app {
+  min-height: 100vh;
+  transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
+}
+
+.app.dark {
+  background: linear-gradient(180deg, #1f1f1f, #0e0e0e);
+  color: white;
+}
+
+.app.light {
+  background: #f6f7fb;
+  color: black;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0;
+}
+
+.navbar-container {
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+.dark .navbar {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.light .navbar {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== LOGO ===== */
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+  border-radius: 18px;
+  padding: 24px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+}
+
+.app.dark .stat-card {
+  background: #242424 !important;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.dark .stat-card:hover {
+  background: #2a2a2a;
+}
+
+.app.light .stat-card {
+  background: #ffffff !important;
+  color: black;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== ICONS & COLORS ===== */
+.icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.app.dark .title {
+  color: #aaa;
+}
+
+.app.light .title {
+  color: #666;
+}
+
+.green {
+  color: #00c853;
+}
+
+.red {
+  color: #ff5252;
+}
+
+.blue {
+  color: #448aff;
+}
+
+/* ===== ACTIVITY / FRIEND BALANCE ===== */
+.activity {
+  padding: 18px 22px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+
+/* ===== LOGIN PAGE ===== */
+.login-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1f1f1f, #0b0b0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: #141414;
+  padding: 42px 38px;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 18px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  text-align: center;
+  animation: fadeUp 0.6s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-logo {
+  height: 58px;
+  margin-bottom: 22px;
+}
+
+.login-card h3 {
+  color: #fff;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: #9a9a9a;
+  font-size: 0.9rem;
+  margin-bottom: 28px;
+}
+
+/* ===== INPUT FIELDS ===== */
+.input-group {
+  display: flex;
+  align-items: center;
+  background: #1f1f1f;
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 16px;
+  transition: border 0.2s, box-shadow 0.2s;
+  border: 1px solid transparent;
+}
+
+.input-group:focus-within {
+  border-color: #1e90ff;
+  box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.15);
+}
+
+.input-group svg {
+  color: #8a8a8a;
+  margin-right: 10px;
+  font-size: 1.1rem;
+}
+
+.input-group input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+.input-group input::placeholder {
+  color: #777;
+}
+
+/* ===== LOGIN BUTTON ===== */
+.login-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #1e90ff, #005eff);
+  color: white;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(30, 144, 255, 0.4);
+}
+
+.login-btn:active {
+  transform: scale(0.98);
+}
+
+/* ===== FOOTER TEXT ===== */
+.footer-text {
+  color: #9a9a9a;
+  font-size: 0.85rem;
+  margin-top: 20px;
+}
+
+.footer-text span {
+  color: #1e90ff;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.footer-text span:hover {
+  text-decoration: underline;
+}
+
+/* ===== LOGIN PAGE (via class) ===== */
+.page-login {
+  height: 100vh;
+  width: 100%;
+}
+
+.quotes {
+  font-family: "Baloo Bhai 2", sans-serif;
+  font-size: 40px;
+}
+
+.h {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-style: italic;
+  font-size: 40px;
+  color: white;
+}
+
+.quotes ul li::before {
+  content: '✔';
+  color: #1ce0a2;
+  margin-right: 10px;
+}
+
+.quotes {
+  color: rgb(11, 10, 0);
+}
+
+.quotes ul {
+  list-style: none;
+  padding: 0;
+  margin: 30px;
+}
+
+#btn {
+  align-items: center;
+  padding: 13px 24px;
+  margin: auto;
+  font-size: 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e90ff, #005eff);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: white;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(30, 144, 255, 0.4);
+}
+
+#btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== PAGE VISIBILITY ===== */
+.page {
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+
+.page.active {
+  display: block;
+}
+
+.active {
+  display: block;
+}
+
+/* ===== NAVBAR BUTTONS LIGHT MODE ===== */
+.light .btn-outline-light {
+  color: #333 !important;
+  border-color: #333 !important;
+}
+
+.light .btn-outline-light:hover {
+  background-color: #e9ecef !important;
+  color: #000 !important;
+  border-color: #333 !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .stat-card {
+    padding: 18px;
+  }
+
+  .login-card {
+    padding: 32px 24px;
+  }
+
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Fix for the white boxes in Dark Mode */
+#page-friends.dark .transaction-card {
+  background: #2a2a2a !important;
+  color: white !important;
+  border-left-color: #444;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure the sub-text (dates/details) is readable */
+#page-friends.dark .transaction-card .info small {
+  color: #bbb !important;
+}
+
+/* Fix for the heading "History with..." */
+#page-friends.dark #historyWithTitle {
+  color: white !important;
 }

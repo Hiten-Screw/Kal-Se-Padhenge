@@ -5,124 +5,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXPENSE TRACKER</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
 
-        body {
-            background-image: url('public/assets/backgrdimg.png');
-            background-position: center;
-            background-size: cover;
-            height: 100vh;
-        }
-
-        .quotes {
-            font-family: "Baloo Bhai 2", sans-serif;
-            font-size: 40px;
-        }
-
-        .h {
-            font-family: Georgia, 'Times New Roman', Times, serif;
-            font-style: italic;
-            font-size: 40px;
-            color: white;
-        }
-
-        .quotes ul li::before {
-            content: '✔';
-            color: #1ce0a2;
-            margin-right: 10px;
-
-        }
-
-        .quotes {
-            color: rgb(11, 10, 0);
-        }
-
-        .quotes ul {
-            list-style: none;
-            padding: 0;
-            margin: 30px;
-        }
-
-        #btn {
-            align-items: center;
-            padding: 28px;
-            margin: auto;
-            font-size: 18px;
-            border-radius: 8px;
-            background-color: #2dd2d8;
-            font-weight: bolder;
-            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-        }
-
-        #btn:hover {
-            background-color: #1462d0;
-        }
-
-        .logo {
-            display: block;
-            margin: 0 auto;
-        }
-
-        .dash-btn {
-            /* padding: 28px; */
-            margin-left: 18px;
-            font-size: 18px;
-            border-radius: 8px;
-            size: 28px;
-            font-weight: bold;
-            background-color: rgb(23, 78, 100);
-            color: wheat;
-        }
-
-        .dash-btn:hover {
-            background-color: rgb(53, 174, 222);
-        }
-
-        #Add_Friends {
-            height: 25px;
-            border-radius: 8px;
-        }
-
-        #Add-btn {
-            height: 30px;
-            border-radius: 8px;
-            background-color: #108a10;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .active {
-            display: block;
-        }
-
-        .credit {
-            color: #1ce0a2;
-            /* Green for credit */
-        }
-
-        .debit {
-            color: #ff4d4d;
-            /* Red for debit */
-        }
-    </style>
+    <!-- New App CSS -->
+    <link rel="stylesheet" href="src/css/App.css">
+    <!-- Existing Shared CSS (Keep for friends page etc) -->
     <link rel="stylesheet" href="src/css/style.css">
 
 </head>
 
-<body>
+<body class="app dark"> <!-- Default to Dark Mode as per App.css -->
 
+    <!-- CONFIG: Set your Supabase credentials here for local development -->
+    <script>
+        // Add your Supabase credentials here for local testing
+        // In production, these will be fetched from /api/config
+        window.SUPABASE_URL = window.SUPABASE_URL || 'https://your-supabase-url.supabase.co';
+        window.SUPABASE_KEY = window.SUPABASE_KEY || 'your-supabase-anon-key';
+    </script>
 
-    <!--logo-->
-    <!-- <h1 align="center"><img src="" alt="Expense Tracker" width="40"></h1> -->
-    <!--buttons on left side-->
-
+    <!-- LOGIN PAGE -->
     <div class="page-login page active">
-        <div align="center">
-            <img width="300" src="public\assets\image1.png" alt="logo">
+        <div align="center" style="padding-top: 50px;">
+            <img width="300" src="public/assets/image1.png" alt="logo">
             <h1 class="h">"No Awkward Reminders. Just Fair Splits."</h1>
             <span class="quotes">
                 <ul>
@@ -131,124 +41,240 @@
                     <li> "Split bills. Not bonds"</li>
                 </ul>
             </span>
-
             <button id="btn" onclick="loginWithGoogle()" disabled>Loading...</button>
-
         </div>
     </div>
-    <div id="nav" class="page">
-        <div align="center">
-            <img width="300" src="public\assets\image1.png" alt="logo">
-        </div>
-        <nav>
-            <!--buttons-->
-            <button class="dash-btn" onclick="navigateTo('page-dashboard')">Dashboard</button>
-            <button class="dash-btn" onclick="navigateTo('page-friends')">Friends</button>
-            <button class="dash-btn" onclick="navigateTo('page-settings')">Settings</button>
+
+    <!-- APP NAVIGATION TABS (Visible on non-login pages) -->
+    <div id="nav" class="page navbar-container" style="display:none; padding-bottom: 0; margin-bottom: 0;">
+        <!-- Navbar Header (Replaces separate logo div) -->
+        <nav class="navbar px-4 py-3">
+            <div class="logo-container">
+                <img src="public/assets/image1.png" alt="IntelliDivide" class="logo" />
+            </div>
+
+            <div class="d-flex gap-2 align-items-center">
+                <!-- Theme Toggle -->
+                <button class="btn btn-outline-light btn-sm" id="theme-toggle" onclick="toggleTheme()">
+                    <i class="bi bi-moon-stars"></i>
+                </button>
+                <!-- Main Nav Buttons -->
+                <button class="btn btn-outline-light btn-sm" onclick="navigateTo('page-dashboard')">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="navigateTo('page-friends')">
+                    <i class="bi bi-people"></i> Friends
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="navigateTo('page-settings')">
+                    <i class="bi bi-gear"></i> Settings
+                </button>
+            </div>
         </nav>
     </div>
 
 
-
-    <div class="page" id="page-dashboard">
-
-
-
-        <!--Total kitna hai-->
-        <h3>TOTAL BALANCE</h3>
-        <p id="dashboard-net-balance">Loading...</p>
-        <!--Right Section-->
-        <div id="dashboard-friends-list" align="right">
-            <p>Loading details...</p>
-        </div>
-        <!-- Quick Add Expense -->
-        <div style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px;">
-            <h4>Quick Add Expense</h4>
-            <input type="text" id="quick-name" placeholder="Friend Name (e.g. Abhi)" style="margin: 5px;">
-            <input type="number" id="quick-amount" placeholder="Amount (e.g. 50)" style="margin: 5px;">
-            <input type="text" id="quick-desc" placeholder="For (e.g. Tea)" style="margin: 5px;">
-            <br>
-            <button id="btn-quick-add" style="margin-top: 10px; background-color: #1ce0a2; color: white;">Pay</button>
-        </div>
-
-        <!-- Bottom-left invest bhi karo bhai -->
-        <div align="left">
-            <h4>Investments:</h4>
-            <p>"Don’t save what is left after spending; spend what is left after saving." – Warren Buffett</p>
-            <p>"Investing is not about timing the market, it’s about time in the market." – Unknown</p>
-        </div>
-        <div align="left">
-
-            <p>"Investing is not about timing the market, it’s about time in the market." – Unknown</p>
-            <p>
-                <a href="https://groww.in/mutual-funds" target="_blank"><img src='public\assets\stock.jpg'
-                        alt='mutual-funds' width='75px' height='75px'></a> Mutual Funds
-                <a href="https://www.ibullion.in/" target="_blank"><img src='public\assets\gold.jpg' alt='gold'
-                        width='75px' height='75px'></a> Gold
-                <a href="https://www.coinbase.com/" target="_blank"><img src='public\assets\crypto.jpg' alt='crypto'
-                        width='75px' height='75px'></a> Crypto
-                <br>
-            </p>
-        </div>
-
-
-
-    </div>
-    <section id="page-friends" class="page">
-        <div class="friends-header">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search users to invite...">
-                <button onclick="searchUsers()">Search</button>
+    <!-- DASHBOARD PAGE -->
+    <div class="page app dark" id="page-dashboard">
+        <!-- Dashboard Content -->
+        <div class="container">
+            <!-- Add Expense Button -->
+            <div class="d-flex justify-content-end mb-4 pt-4">
+                <button class="btn btn-primary d-flex align-items-center gap-2"
+                    onclick="document.getElementById('quick-add-section').style.display='block'">
+                    <i class="bi bi-plus-circle"></i> Add Expense
+                </button>
             </div>
-            <ul id="searchResults" class="search-dropdown"></ul>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="icon green"><i class="bi bi-wallet2"></i></div>
+                        <p class="title">Total Balance</p>
+                        <h2 class="green" id="dashboard-total-balance">₹2,450</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="icon red"><i class="bi bi-arrow-down-circle"></i></div>
+                        <p class="title">You Owe</p>
+                        <h2 class="red" id="dashboard-owe">₹1,200</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="icon blue"><i class="bi bi-arrow-up-circle"></i></div>
+                        <p class="title">You Are Owed</p>
+                        <h2 class="blue" id="dashboard-owed">₹3,650</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add Expense (Hidden by default) -->
+            <div id="quick-add-section" class="stat-card mt-4" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Quick Add Expense</h4>
+                    <button class="btn btn-sm btn-close"
+                        onclick="this.closest('#quick-add-section').style.display='none'"></button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <div style="position: relative;">
+                            <input type="text" id="quick-name" class="form-control" placeholder="Search friend..."
+                                oninput="searchFriendsForExpense(this.value)">
+                            <ul id="quick-friends-dropdown" class="list-group"
+                                style="position: absolute; top: 100%; left: 0; right: 0; display: none; z-index: 1000;">
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" id="quick-amount" class="form-control" placeholder="Amount (e.g. 500)"
+                            step="0.01">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="quick-desc" class="form-control" placeholder="For (e.g. Lunch)">
+                    </div>
+                </div>
+                <button id="btn-quick-add" class="btn btn-success mt-3" onclick="handleQuickAdd()">Pay / Split</button>
+            </div>
+
+            <!-- Recent Activity / Friend Balances -->
+            <h5 class="mt-5 mb-3">Recent Activity</h5>
+            <div id="dashboard-friends-list">
+                <div class="activity">
+                    <span>Dinner with friends</span>
+                    <span class="green">+ ₹350</span>
+                </div>
+                <div class="activity">
+                    <span>Cab split</span>
+                    <span class="green">+ ₹350</span>
+                </div>
+                <div class="activity">
+                    <span>Movie night</span>
+                    <span class="green">+ ₹350</span>
+                </div>
+            </div>
+
+            <!-- Investments Section -->
+            <div class="mt-5 mb-5">
+                <h4 class="text-white mb-3">💡 Investment Opportunities</h4>
+                <p class="text-muted">"Don't save what is left after spending; spend what is left after saving." –
+                    Warren Buffett</p>
+                <div class="d-flex gap-3 mt-3">
+                    <a href="https://groww.in/mutual-funds" target="_blank" title="Mutual Funds">
+                        <img src='public/assets/stock.jpg' alt='mutual-funds' width='60' class="rounded"
+                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
+                    </a>
+                    <a href="https://www.ibullion.in/" target="_blank" title="Gold">
+                        <img src='public/assets/gold.jpg' alt='gold' width='60' class="rounded"
+                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
+                    </a>
+                    <a href="https://www.coinbase.com/" target="_blank" title="Cryptocurrency">
+                        <img src='public/assets/crypto.jpg' alt='crypto' width='60' class="rounded"
+                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
+                    </a>
+                </div>
+            </div>
+
         </div>
+    </div>
 
-        <div class="friends-container">
-            <aside class="friends-sidebar">
-                <div class="sidebar-section">
-                    <h3>Pending Requests</h3>
-                    <ul id="friendRequests" class="list-styled"></ul>
+    <!-- FRIENDS PAGE -->
+    <section id="page-friends" class="page">
+        <div class="container mt-4">
+            <div class="friends-header mb-3">
+                <div class="input-group">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search users to invite...">
+                    <button class="btn btn-secondary" onclick="searchUsers()">Search</button>
                 </div>
+                <ul id="searchResults" class="search-dropdown list-group mt-2"></ul>
+            </div>
 
-                <div class="sidebar-section">
-                    <h3>Your Friends</h3>
-                    <ul id="friendsList" class="list-styled"></ul>
-                </div>
-            </aside>
+            <div class="friends-container d-flex flex-wrap">
+                <aside class="friends-sidebar col-md-4 col-12 rounded-start">
+                    <div class="sidebar-section">
+                        <h3>Pending Requests</h3>
+                        <ul id="friendRequests" class="list-group"></ul>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Your Friends</h3>
+                        <ul id="friendsList" class="list-group"></ul>
+                    </div>
+                </aside>
 
-            <main class="transaction-history" id="historyView">
-                <div id="historyPlaceholder" class="empty-state">
-                    <p>Select a friend to view your history with them.</p>
-                </div>
-                <div id="historyContent" style="display: none;">
-                    <h2 id="historyWithTitle">History with ...</h2>
-                    <div id="transactionList"></div>
-                </div>
-            </main>
+                <main class="transaction-history col-md-8 col-12 rounded-end" id="historyView">
+                    <div id="historyPlaceholder" class="empty-state p-4 text-center">
+                        <p>Select a friend to view your history with them.</p>
+                    </div>
+                    <div id="historyContent" style="display: none;" class="p-3">
+                        <h2 id="historyWithTitle">History with ...</h2>
+                        <div id="transactionList"></div>
+                    </div>
+                </main>
+            </div>
         </div>
     </section>
 
+    <!-- SETTINGS PAGE -->
     <section id="page-settings" class="page">
-        <h2>User Profile</h2>
-        <p id="settings-username">Name: Loading...</p>
-        <p id="settings-email">Email: Loading...</p>
-        <hr>
-        <button style="color: red;">Delete Account</button>
-        <button onclick="handleLogout()">Logout</button>
+        <div class="container mt-4">
+            <div class="stat-card">
+                <h2>User Profile</h2>
+                <p id="settings-username" class="lead">Name: Loading...</p>
+                <p id="settings-email" class="lead">Email: Loading...</p>
+                <hr>
+                <button class="btn btn-danger" onclick="alert('Delete functionality not implemented yet')">Delete
+                    Account</button>
+                <button class="btn btn-warning" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
     </section>
 
-    <footer class="page">
-        <div align="center">
-            <button id="voice-btn">Mic</button>
-            <input type="text" id="gemini-query" placeholder="Tell Gemini: I paid 500 for lunch with Abhi"
-                style="width: 60%;">
-            <button id="btn-sync-expense">Sync Expense</button>
+    <!-- FOOTER -->
+    <footer class="page fixed-bottom bg-dark p-3 text-center">
+        <div class="d-flex justify-content-center gap-2">
+            <button id="voice-btn" class="btn btn-outline-info rounded-circle"><i class="bi bi-mic"></i></button>
+            <input type="text" id="gemini-query" class="form-control w-50"
+                placeholder="Tell Gemini: I paid 500 for lunch with Abhi">
+            <button id="btn-sync-expense" class="btn btn-info">Sync</button>
         </div>
     </footer>
 
+    <script src="src/main.js"></script>
+    <script>
+        // Toggle between dark and light theme
+        function toggleTheme() {
+            const dashboard = document.getElementById('page-dashboard');
+            const navbar = document.getElementById('nav');
+            const friends = document.getElementById('page-friends');
+            const settings = document.getElementById('page-settings');
 
+            if (dashboard) {
+                dashboard.classList.toggle('dark');
+                dashboard.classList.toggle('light');
+            }
+            if (navbar) {
+                navbar.classList.toggle('dark');
+                navbar.classList.toggle('light');
+            }
+            if (friends) {
+                friends.classList.toggle('dark');
+                friends.classList.toggle('light');
+            }
+            if (settings) {
+                settings.classList.toggle('dark');
+                settings.classList.toggle('light');
+            }
+        }
 
-    <script src="src/main.js">
+        // Simple function to toggle quick add if needed elsewhere
+        function toggleQuickAdd() {
+            var el = document.getElementById('quick-add-section');
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
     </script>
 </body>
 
