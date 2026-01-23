@@ -1,17 +1,34 @@
 // SUPABASE AUTHENTICATION
+// 1. Declare 'sb' globally but don't initialize it yet
+let sb;
 
-const supabaseUrl = "https://qnyhmfndmtwkoofvufaa.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueWhtZm5kbXR3a29vZnZ1ZmFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NTc4MTEsImV4cCI6MjA4NDEzMzgxMX0.1I2CadOZN7gC-QdKgm2BXVEH9RPcI4reB9o99RPnTmY";
+// 2. Create a single promise that handles the entire setup
+const initPromise = fetch('/.netlify/functions/config') // Ensure this matches your index.js route
+    .then(res => {
+        if (!res.ok) throw new Error("Config fetch failed");
+        return res.json();
+    })
+    .then(config => {
+        // Use the global 'supabase' object from the CDN
+        sb = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        window.sb = sb; // For debugging in console
+        console.log("✅ Supabase Client Ready");
+    })
+    .catch(err => {
+        console.error("❌ Critical Initialization Error:", err);
+    });
 
-console.log("DEBUG: Supabase URL:", supabaseUrl);
-console.log("DEBUG: Supabase Key starts with:", supabaseKey ? supabaseKey.substring(0, 10) + "..." : "UNDEFINED");
+// console.log("DEBUG: Supabase URL:", supabaseUrl);
+// console.log("DEBUG: Supabase Key starts with:", supabaseKey ? supabaseKey.substring(0, 10) + "..." : "UNDEFINED");
 
-window.sb = supabase.createClient(supabaseUrl, supabaseKey);
+// window.sb = supabase.createClient(supabaseUrl, supabaseKey);
 // 3. Debug to verify it's alive
 console.log("✅ Supabase Client Initialized:", window.sb);
 
 let supabaseClient;
 let initializationPromise = null;
+// 1. Add this variable at the very top of main.js (outside any function)
+let isSyncing = false;
 
 async function initApp() {
     // Return cached promise if already initialized or initializing
@@ -830,6 +847,8 @@ async function showTransactionHistory(friendId, friendUsername) {
 
 
 async function handleNaturalLanguageExpense(text) {
+    // NEW: Wait until the config is fetched and 'sb' is defined
+    await initPromise;
     try {
         if (!window.supabase) {
             throw new Error("Supabase is not initialized. Check index.js");
@@ -933,8 +952,14 @@ const voiceBtn = document.getElementById('voice-btn');
 
 
 
+
+
 async function performSync() {
+    // 2. Immediate Guard: If already syncing, exit the function
+    if (isSyncing) return;
+
     const geminiInput = document.getElementById('gemini-query');
+    const syncBtn = document.getElementById('btn-sync-expense'); // Ensure this ID matches your HTML
     const text = geminiInput.value.trim();
 
     if (!text) {
@@ -943,13 +968,29 @@ async function performSync() {
     }
 
     try {
-        // Call the NLP function we built earlier
+        // 3. Set the Loading State
+        isSyncing = true;
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+        }
+
         const data = await handleNaturalLanguageExpense(text);
+
+        // Success Logic
         alert(`Success! Logged ₹${data.final_amount} for ${data.target_username}`);
         geminiInput.value = "";
+
     } catch (err) {
         console.error("Sync Error:", err);
         alert("Sync failed: " + err.message);
+    } finally {
+        // 4. Reset the State: This runs whether the try SUCCEEDS or FAILS
+        isSyncing = false;
+        if (syncBtn) {
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = 'Sync'; // Restore your original text
+        }
     }
 }
 
