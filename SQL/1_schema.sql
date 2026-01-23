@@ -13,6 +13,7 @@ CREATE TABLE public.Expenses (
   payer_id uuid NOT NULL,
   receiver_id uuid NOT NULL,
   is_settled boolean NOT NULL DEFAULT false,
+  settled_amount numeric DEFAULT 0,
   created_at timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
   group_id uuid,
   CONSTRAINT Expenses_pkey PRIMARY KEY (id),
