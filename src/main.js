@@ -1,7 +1,16 @@
 // SUPABASE AUTHENTICATION
+
+const supabaseUrl = "https://qnyhmfndmtwkoofvufaa.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueWhtZm5kbXR3a29vZnZ1ZmFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NTc4MTEsImV4cCI6MjA4NDEzMzgxMX0.1I2CadOZN7gC-QdKgm2BXVEH9RPcI4reB9o99RPnTmY";
+
+console.log("DEBUG: Supabase URL:", supabaseUrl);
+console.log("DEBUG: Supabase Key starts with:", supabaseKey ? supabaseKey.substring(0, 10) + "..." : "UNDEFINED");
+
+window.sb = supabase.createClient(supabaseUrl, supabaseKey);
+// 3. Debug to verify it's alive
+console.log("✅ Supabase Client Initialized:", window.sb);
+
 let supabaseClient;
-let supabaseUrl;
-let supabaseKey;
 let initializationPromise = null;
 
 async function initApp() {
@@ -34,7 +43,7 @@ async function initApp() {
                 }
             } catch (netlifyError) {
                 console.log("ℹ️  Netlify function not available, trying /api/config...");
-                
+
                 // Try alternative API endpoint
                 try {
                     const response = await fetch('/api/config', { signal: AbortSignal.timeout(5000) });
@@ -107,10 +116,18 @@ async function initApp() {
             });
 
             // Event listener for Sync Expense
+            // Updated Event listener for Sync Expense
             const syncBtn = document.getElementById('btn-sync-expense');
             if (syncBtn) {
-                syncBtn.removeEventListener('click', handleSyncExpense);
-                syncBtn.addEventListener('click', handleSyncExpense);
+                // 1. Always remove old listeners to prevent double-logging
+                syncBtn.removeEventListener('click', performSync);
+
+                // 2. Point to the CORRECT function name
+                syncBtn.addEventListener('click', performSync);
+
+                console.log("✅ Sync button listener attached to performSync");
+            } else {
+                console.error("❌ Could not find button with ID 'btn-sync-expense'");
             }
 
             console.log("✅ App initialization completed successfully");
@@ -275,65 +292,19 @@ async function handleQuickAdd() {
 
         // Success!
         alert("✅ Expense added successfully!");
-        
+
         // Clear inputs
         nameInput.value = '';
         amountInput.value = '';
         descInput.value = '';
         document.getElementById('quick-add-section').style.display = 'none';
-        
+
         // Refresh dashboard
         await fetchDashboardData();
-        
+
     } catch (error) {
         console.error("Error adding expense:", error);
         alert("❌ Error: " + error.message);
-    }
-}
-
-
-async function handleSyncExpense() {
-    const queryInput = document.getElementById('gemini-query');
-    const query = queryInput.value;
-    if (!query) {
-        alert("Please enter a command like: 'I paid 500 for lunch with Name'");
-        return;
-    }
-
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            alert("You must be logged in.");
-            return;
-        }
-
-        const response = await fetch('/api/expense', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userId: session.user.id,
-                query: query
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(result.message);
-            queryInput.value = ''; // Clear input
-            // Refresh dashboard if visible
-            if (document.getElementById('page-dashboard').style.display === 'block') {
-                fetchDashboardData();
-            }
-        } else {
-            alert("Error: " + result.error);
-        }
-
-    } catch (error) {
-        console.error("Error syncing expense:", error);
-        alert("Failed to sync expense.");
     }
 }
 
@@ -423,7 +394,7 @@ async function fetchDashboardData() {
         const friendsListEl = document.getElementById('dashboard-friends-list');
         if (friendsListEl) {
             const friendIds = Object.keys(friendBalances);
-            
+
             if (friendIds.length === 0) {
                 friendsListEl.innerHTML = '<div class="activity"><span>No transactions yet</span><span class="green">Start by adding an expense!</span></div>';
             } else {
@@ -448,7 +419,7 @@ async function fetchDashboardData() {
                     const isPositive = balance >= 0;
                     const color = isPositive ? 'green' : 'red';
                     const text = isPositive ? `You are owed ₹${balance.toFixed(2)}` : `You owe ₹${Math.abs(balance).toFixed(2)}`;
-                    
+
                     html += `<div class="activity">
                         <span>${username}</span>
                         <span class="${color}">${text}</span>
@@ -488,7 +459,7 @@ async function fetchSettingsData() {
 
         // Fetch user profile directly from Supabase
         const userId = session.user.id;
-        
+
         const { data: profile, error: profileError } = await supabaseClient
             .from('Profile')
             .select('username')
@@ -587,7 +558,7 @@ async function searchFriendsForExpense(query) {
     if (!supabaseClient) return;
 
     const dropdown = document.getElementById('quick-friends-dropdown');
-    
+
     if (!query || query.trim() === "") {
         dropdown.style.display = 'none';
         return;
@@ -626,7 +597,7 @@ async function searchFriendsForExpense(query) {
             }
         });
 
-        const filtered = friends.filter(f => 
+        const filtered = friends.filter(f =>
             f.username.toLowerCase().includes(query.toLowerCase())
         );
 
@@ -856,3 +827,167 @@ async function showTransactionHistory(friendId, friendUsername) {
         `;
     }).join('');
 }
+
+
+async function handleNaturalLanguageExpense(text) {
+    try {
+        if (!window.supabase) {
+            throw new Error("Supabase is not initialized. Check index.js");
+        }
+        // 1. Get current user session
+        const { data: { user }, error: authError } = await window.sb.auth.getUser();
+        if (authError || !user) throw new Error("Please log in first");
+
+        // 2. Call the Netlify Function
+        const response = await fetch('/.netlify/functions/expense', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userInput: text,
+                sender_id: user.id
+            })
+        });
+
+        // 3. Safety Check: If Netlify returns an error (like 404 or 500)
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server Error: ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || "Failed to process expense");
+        }
+
+        return result.logged; // Returns the data for your UI to use
+    } catch (err) {
+        console.error("NLP Error:", err);
+        throw err; // Pass the error up to your UI handler
+    }
+}
+
+document.getElementById('submit-expense').addEventListener('click', () => {
+    const inputField = document.getElementById('ai-input');
+    const userText = inputField.value;
+
+    if (userText) {
+        // This is where you "READ" the value, making the function active!
+        handleNaturalLanguageExpense(userText);
+        inputField.value = ""; // Clear the box after sending
+    }
+});
+
+document.getElementById('ai-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        handleNaturalLanguageExpense(e.target.value);
+        e.target.value = "";
+    }
+});
+
+// 1. Get references to your footer elements
+const geminiInput = document.getElementById('gemini-query');
+
+// 2. Function to handle the click/sync action
+async function performAILog() {
+    const text = geminiInput.value.trim();
+
+    if (!text) {
+        alert("Please enter an expense description first!");
+        return;
+    }
+
+    // UI Feedback: Change button text while processing
+    const originalText = syncBtn.innerText;
+    syncBtn.innerText = "Syncing...";
+    syncBtn.disabled = true;
+
+    try {
+        // This calls the function you previously defined
+        await handleNaturalLanguageExpense(text);
+
+        // Clear input on success
+        geminiInput.value = "";
+    } catch (err) {
+        console.error("Sync failed:", err);
+    } finally {
+        // Reset button state
+        syncBtn.innerText = originalText;
+        syncBtn.disabled = false;
+    }
+}
+
+// 3. Trigger on Button Click
+syncBtn.addEventListener('click', performAILog);
+
+// 4. Trigger on 'Enter' key for better UX
+geminiInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        performAILog();
+    }
+});
+
+
+
+const voiceBtn = document.getElementById('voice-btn');
+
+
+
+async function performSync() {
+    const geminiInput = document.getElementById('gemini-query');
+    const text = geminiInput.value.trim();
+
+    if (!text) {
+        alert("Please enter some text for Gemini!");
+        return;
+    }
+
+    try {
+        // Call the NLP function we built earlier
+        const data = await handleNaturalLanguageExpense(text);
+        alert(`Success! Logged ₹${data.final_amount} for ${data.target_username}`);
+        geminiInput.value = "";
+    } catch (err) {
+        console.error("Sync Error:", err);
+        alert("Sync failed: " + err.message);
+    }
+}
+
+// --- 4. VOICE RECOGNITION (MIC BUTTON) ---
+function startVoiceLogic() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("Your browser does not support voice input.");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN'; // Set to Indian English for better accent recognition
+
+    recognition.onstart = () => {
+        voiceBtn.classList.replace('btn-outline-info', 'btn-danger');
+        geminiInput.placeholder = "Listening...";
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        geminiInput.value = transcript;
+    };
+
+    recognition.onend = () => {
+        voiceBtn.classList.replace('btn-danger', 'btn-outline-info');
+        geminiInput.placeholder = "Tell Gemini: I paid 500 for lunch with Abhi";
+    };
+
+    recognition.start();
+}
+
+// --- 5. EVENT LISTENERS ---
+syncBtn.addEventListener('click', performSync);
+
+geminiInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSync();
+});
+
+voiceBtn.addEventListener('click', startVoiceLogic);

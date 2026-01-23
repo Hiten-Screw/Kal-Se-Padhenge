@@ -5,14 +5,7 @@ const path = require('path')
 const app = express()
 const port = 4000
 
-// Supabase Configuration
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
 
-console.log("DEBUG: Supabase URL:", supabaseUrl);
-console.log("DEBUG: Supabase Key starts with:", supabaseKey ? supabaseKey.substring(0, 10) + "..." : "UNDEFINED");
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 
 app.use(express.static(path.join(__dirname)))
@@ -21,8 +14,8 @@ app.use(express.json())
 // Config Endpoint for Frontend
 app.get('/api/config', (req, res) => {
   res.json({
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_KEY
+    supabaseUrl: supabaseUrl,
+    supabaseKey: supabaseKey
   });
 });
 
@@ -111,58 +104,6 @@ app.get('/api/friends', async (req, res) => {
     res.json(groupList);
   } catch (err) {
     console.error("Error fetching friends/groups data:", err);
-    res.status(500).json({ error: err.message });
-  }
-})
-
-app.post('/api/expense', async (req, res) => {
-  const { userId, query, amount: bodyAmount, description: bodyDesc, targetUsername: bodyTarget } = req.body;
-
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
-  console.log(`Processing expense. User: ${userId}`);
-
-  try {
-    let amount, description, targetUsername;
-
-    if (bodyAmount && bodyDesc && bodyTarget) {
-      // Structured Input
-      amount = parseFloat(bodyAmount);
-      description = bodyDesc;
-      targetUsername = bodyTarget;
-    } else if (query) {
-      //  "I paid 500 for lunch with Abhi"
-      const regex = /paid\s+(\d+)\s+for\s+(.+?)\s+with\s+(.+)/i;
-      const match = query.match(regex);
-
-      if (!match) {
-        return res.status(400).json({
-          error: 'Could not parse query. Try format: "paid [amount] for [description] with [name]"'
-        });
-      }
-
-      amount = parseFloat(match[1]);
-      description = match[2].trim();
-      targetUsername = match[3].trim();
-    } else {
-      return res.status(400).json({ error: 'Missing expense details (query or structured fields)' });
-    }
-
-    // Call RPC function
-    const { error } = await supabase.rpc('create_expense_automated', {
-      sender_id: userId,
-      target_username: targetUsername,
-      final_amount: amount,
-      expense_description: description,
-      target_group_id: null // Optional, default null
-    });
-
-    if (error) throw error;
-
-    res.json({ success: true, message: `Expense recorded: You paid ${amount} for ${description} with ${targetUsername}` });
-
-  } catch (err) {
-    console.error("Error creating expense:", err);
     res.status(500).json({ error: err.message });
   }
 })
