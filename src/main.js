@@ -132,6 +132,20 @@ async function initApp() {
                 }
             });
 
+            const voiceBtn = document.getElementById('btn-voice-input');
+
+            if (voiceBtn) {
+                // 2. Remove old listener to be safe (prevent double-firing)
+                voiceBtn.removeEventListener('click', startVoiceLogic);
+
+                // 3. Attach the listener
+                voiceBtn.addEventListener('click', startVoiceLogic);
+
+                console.log("✅ Voice button listener attached");
+            } else {
+                console.error("❌ Could not find button with ID 'btn-voice-input'");
+            }
+
             // Event listener for Sync Expense
             // Updated Event listener for Sync Expense
             const syncBtn = document.getElementById('btn-sync-expense');
@@ -936,19 +950,7 @@ async function performAILog() {
     }
 }
 
-const voiceBtn = document.getElementById('btn-voice-input').addEventListener('click', startVoiceLogic);
 
-if (voiceBtn) {
-    // 1. Remove old listener to be safe (prevent double-firing)
-    voiceBtn.removeEventListener('click', startVoiceLogic);
-
-    // 2. Attach the listener
-    voiceBtn.addEventListener('click', startVoiceLogic);
-
-    console.log("✅ Voice button listener attached");
-} else {
-    console.error("❌ Could not find button with ID 'btn-voice-input'");
-}
 
 // 3. Trigger on Button Click
 syncBtn.addEventListener('click', performAILog);
@@ -1014,36 +1016,36 @@ function startVoiceLogic() {
         return;
     }
 
-    // MATCHING YOUR HTML
+    const recognition = new SpeechRecognition();
     const voiceBtn = document.getElementById('btn-voice-input');
     const geminiInput = document.getElementById('gemini-query');
-    const micIcon = voiceBtn.querySelector('i'); // Target the <i> tag specifically
+    const micIcon = voiceBtn.querySelector('i');
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN'; // Optimized for your location
+    recognition.lang = 'en-IN'; // Optimized for Indian English accents
     recognition.interimResults = false;
 
     recognition.onstart = () => {
-        // Change button color to red and swap icon to show it's active
+        // Change button to red and swap icon to show it is listening
         voiceBtn.classList.replace('btn-outline-info', 'btn-danger');
         if (micIcon) micIcon.classList.replace('bi-mic-fill', 'bi-mic-mute-fill');
         geminiInput.placeholder = "Listening...";
     };
 
     recognition.onresult = (event) => {
+        // This line types the speech directly into your text box
         const transcript = event.results[0][0].transcript;
         geminiInput.value = transcript;
     };
 
     recognition.onend = () => {
-        // Restore original state
+        // Reset the button and placeholder when finished
         voiceBtn.classList.replace('btn-danger', 'btn-outline-info');
         if (micIcon) micIcon.classList.replace('bi-mic-mute-fill', 'bi-mic-fill');
-        geminiInput.placeholder = "Tell Gemini: I paid 500 for lunch with Abhi";
+        geminiInput.placeholder = "Rahul owe 1000 for Dinner";
     };
 
     recognition.onerror = (event) => {
-        console.error("Speech Recognition Error:", event.error);
+        console.error("Speech Error:", event.error);
         voiceBtn.classList.replace('btn-danger', 'btn-outline-info');
     };
 
@@ -1057,5 +1059,4 @@ geminiInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') performSync();
 });
 
-voiceBtn.addEventListener('click', startVoiceLogic);
 
