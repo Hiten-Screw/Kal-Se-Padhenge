@@ -936,6 +936,20 @@ async function performAILog() {
     }
 }
 
+const voiceBtn = document.getElementById('btn-voice-input').addEventListener('click', startVoiceLogic);
+
+if (voiceBtn) {
+    // 1. Remove old listener to be safe (prevent double-firing)
+    voiceBtn.removeEventListener('click', startVoiceLogic);
+
+    // 2. Attach the listener
+    voiceBtn.addEventListener('click', startVoiceLogic);
+
+    console.log("✅ Voice button listener attached");
+} else {
+    console.error("❌ Could not find button with ID 'btn-voice-input'");
+}
+
 // 3. Trigger on Button Click
 syncBtn.addEventListener('click', performAILog);
 
@@ -946,9 +960,6 @@ geminiInput.addEventListener('keypress', (e) => {
     }
 });
 
-
-
-const voiceBtn = document.getElementById('btn-voice-input');
 
 
 
