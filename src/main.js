@@ -948,7 +948,7 @@ geminiInput.addEventListener('keypress', (e) => {
 
 
 
-const voiceBtn = document.getElementById('voice-btn');
+const voiceBtn = document.getElementById('btn-voice-input');
 
 
 
@@ -999,15 +999,23 @@ function startVoiceLogic() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-        alert("Your browser does not support voice input.");
+        alert("Your browser does not support voice input. Please use Chrome or Edge.");
         return;
     }
 
+    // MATCHING YOUR HTML
+    const voiceBtn = document.getElementById('btn-voice-input');
+    const geminiInput = document.getElementById('gemini-query');
+    const micIcon = voiceBtn.querySelector('i'); // Target the <i> tag specifically
+
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN'; // Set to Indian English for better accent recognition
+    recognition.lang = 'en-IN'; // Optimized for your location
+    recognition.interimResults = false;
 
     recognition.onstart = () => {
+        // Change button color to red and swap icon to show it's active
         voiceBtn.classList.replace('btn-outline-info', 'btn-danger');
+        if (micIcon) micIcon.classList.replace('bi-mic-fill', 'bi-mic-mute-fill');
         geminiInput.placeholder = "Listening...";
     };
 
@@ -1017,8 +1025,15 @@ function startVoiceLogic() {
     };
 
     recognition.onend = () => {
+        // Restore original state
         voiceBtn.classList.replace('btn-danger', 'btn-outline-info');
+        if (micIcon) micIcon.classList.replace('bi-mic-mute-fill', 'bi-mic-fill');
         geminiInput.placeholder = "Tell Gemini: I paid 500 for lunch with Abhi";
+    };
+
+    recognition.onerror = (event) => {
+        console.error("Speech Recognition Error:", event.error);
+        voiceBtn.classList.replace('btn-danger', 'btn-outline-info');
     };
 
     recognition.start();
@@ -1032,3 +1047,4 @@ geminiInput.addEventListener('keypress', (e) => {
 });
 
 voiceBtn.addEventListener('click', startVoiceLogic);
+
