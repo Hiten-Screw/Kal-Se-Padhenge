@@ -30,6 +30,12 @@ let initializationPromise = null;
 // 1. Add this variable at the very top of main.js (outside any function)
 let isSyncing = false;
 
+// Transaction Pagination State
+let currentTxnPage = 0;
+const TXN_LIMIT = 10;
+let currentTxnFriendId = null;
+let currentTxnFriendUsername = null; // Added this missing one too just in case
+
 async function initApp() {
     // Return cached promise if already initialized or initializing
     if (initializationPromise) {
@@ -198,6 +204,9 @@ function handleLoginSuccess(session) {
 
     loadFriendsInSidebar() // Load friends in sidebar
     loadFriendRequests() // Load friend requests on login
+
+    // FORCE DASHBOARD UPDATE
+    fetchDashboardData();
 }
 
 async function loginWithGoogle() {
@@ -246,98 +255,8 @@ window.loginWithGoogle = loginWithGoogle;
 
 window.onload = initApp;
 
-async function handleQuickAdd() {
-    const nameInput = document.getElementById('quick-name');
-    const amountInput = document.getElementById('quick-amount');
-    const descInput = document.getElementById('quick-desc');
-
-    const friendUsername = nameInput.value.trim();
-    const amount = parseFloat(amountInput.value);
-    const description = descInput.value.trim();
-
-    if (!friendUsername || !amount || !description) {
-        alert("❌ Please fill all fields (Friend Name, Amount, Description)");
-        return;
-    }
-
-    if (amount <= 0) {
-        alert("❌ Amount must be greater than 0");
-        return;
-    }
-
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            alert("❌ You must be logged in.");
-            return;
-        }
-
-        const userId = session.user.id;
-
-        // Step 1: Get friend's ID by username
-        const { data: friendProfiles, error: friendError } = await supabaseClient
-            .from('Profile')
-            .select('id')
-            .eq('username', friendUsername)
-            .single();
-
-        if (friendError) {
-            alert("❌ Friend not found");
-            return;
-        }
-
-        const friendId = friendProfiles.id;
-
-        // Step 2: Verify they are accepted friends
-        const { data: friendships, error: friendshipError } = await supabaseClient
-            .from('Friends')
-            .select('status')
-            .eq('status', 'accepted')
-            .or(`and(user1_id.eq.${userId},user2_id.eq.${friendId}),and(user1_id.eq.${friendId},user2_id.eq.${userId})`)
-            .single();
-
-        if (friendshipError || !friendships) {
-            alert("❌ You are not friends with " + friendUsername);
-            return;
-        }
-
-        // Step 3: Create expense record (user is the payer)
-        const { data: expense, error: expenseError } = await supabaseClient
-            .from('Expenses')
-            .insert([
-                {
-                    payer_id: userId,
-                    receiver_id: friendId,
-                    amount: amount,
-                    description: description,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select();
-
-        if (expenseError) {
-            console.error("Error creating expense:", expenseError);
-            alert("❌ Failed to add expense: " + expenseError.message);
-            return;
-        }
-
-        // Success!
-        alert("✅ Expense added successfully!");
-
-        // Clear inputs
-        nameInput.value = '';
-        amountInput.value = '';
-        descInput.value = '';
-        document.getElementById('quick-add-section').style.display = 'none';
-
-        // Refresh dashboard
-        await fetchDashboardData();
-
-    } catch (error) {
-        console.error("Error adding expense:", error);
-        alert("❌ Error: " + error.message);
-    }
-}
+// Duplicate handleQuickAdd removed.
+// The correct implementation is at the bottom of the file directly using ID from search.
 
 
 // switch between Dashboard, Friends, and Settings
@@ -371,9 +290,10 @@ async function fetchDashboardData() {
         console.log("Fetching dashboard data for user:", userId);
 
         // Fetch user's total balance, amount owed, and amount they're owed
+        // ALSO needed for Recent Activity: description, created_at
         const { data: expenses, error: expensesError } = await supabaseClient
             .from('Expenses')
-            .select('payer_id, receiver_id, amount')
+            .select('*') // Use * to avoid 400 error if a column (like settled_amount) is missing
             .or(`payer_id.eq.${userId},receiver_id.eq.${userId}`);
 
         if (expensesError) {
@@ -381,28 +301,35 @@ async function fetchDashboardData() {
             return;
         }
 
+        console.log("DEBUG: Raw Expenses fetched:", expenses);
+
         // Calculate totals
         let totalOwed = 0;      // Amount user owes to others
         let totalCredited = 0;  // Amount others owe to user
-        const friendBalances = {};
 
         expenses.forEach(expense => {
+            const amount = parseFloat(expense.amount);
+            const settled = parseFloat(expense.settled_amount || 0);
+            const remaining = amount - settled;
+
+            // console.log(`DEBUG: Txn ${expense.id} | Amount: ${amount} | Settled: ${settled} | Remaining: ${remaining} | iPaid: ${expense.payer_id === userId}`);
+
+            // Skip if fully settled (though query filters usually handle is_settled, safe to check remaining)
+            if (expense.is_settled || remaining <= 0) return;
+
             if (expense.payer_id === userId) {
                 // User is the payer (people owe them)
-                totalCredited += parseFloat(expense.amount);
-                const friendId = expense.receiver_id;
-                friendBalances[friendId] = (friendBalances[friendId] || 0) + parseFloat(expense.amount);
+                totalCredited += remaining;
             } else {
                 // User is the receiver (owes to others)
-                totalOwed += parseFloat(expense.amount);
-                const friendId = expense.payer_id;
-                friendBalances[friendId] = (friendBalances[friendId] || 0) - parseFloat(expense.amount);
+                totalOwed += remaining;
             }
         });
 
+        // Net Balance is strictly what you are owed minus what you owe.
         const netBalance = totalCredited - totalOwed;
 
-        console.log("Dashboard Totals:", { totalCredited, totalOwed, netBalance, friendBalances });
+        console.log("DEBUG: Calculated Totals:", { totalCredited, totalOwed, netBalance });
 
         // Update dashboard elements
         const totalBalanceEl = document.getElementById('dashboard-total-balance');
@@ -421,42 +348,61 @@ async function fetchDashboardData() {
             owedEl.innerHTML = `₹${totalCredited.toFixed(2)}`;
         }
 
-        // Fetch friend names and update friend balances
-        const friendsListEl = document.getElementById('dashboard-friends-list');
-        if (friendsListEl) {
-            const friendIds = Object.keys(friendBalances);
+        // --- RECENT ACTIVITY (Top 3) ---
+        // Warning: Showing FRIEND balances is gone. We show TRANSACTIONS now.
+        const recentListEl = document.getElementById('dashboard-friends-list');
+        if (recentListEl) {
+            // Sort by Date Descending
+            expenses.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            if (friendIds.length === 0) {
-                friendsListEl.innerHTML = '<div class="activity"><span>No transactions yet</span><span class="green">Start by adding an expense!</span></div>';
+            // Slice Top 3
+            const recentTxns = expenses.slice(0, 3);
+
+            if (recentTxns.length === 0) {
+                recentListEl.innerHTML = '<div class="activity"><span>No transactions yet</span><span class="green">Start by adding an expense!</span></div>';
             } else {
-                // Fetch friend profiles
-                const { data: profiles, error: profileError } = await supabaseClient
+                // We need names. Collect IDs.
+                const userIds = new Set();
+                recentTxns.forEach(e => {
+                    userIds.add(e.payer_id);
+                    userIds.add(e.receiver_id);
+                });
+
+                const { data: profiles } = await supabaseClient
                     .from('Profile')
                     .select('id, username')
-                    .in('id', friendIds);
-
-                if (profileError) {
-                    console.error("Error fetching friend profiles:", profileError);
-                    return;
-                }
+                    .in('id', Array.from(userIds));
 
                 const profileMap = {};
-                profiles.forEach(p => profileMap[p.id] = p.username);
+                profiles?.forEach(p => profileMap[p.id] = p.username);
 
                 let html = '';
-                friendIds.forEach(friendId => {
-                    const balance = friendBalances[friendId];
-                    const username = profileMap[friendId] || 'Unknown';
-                    const isPositive = balance >= 0;
-                    const color = isPositive ? 'green' : 'red';
-                    const text = isPositive ? `You are owed ₹${balance.toFixed(2)}` : `You owe ₹${Math.abs(balance).toFixed(2)}`;
+                recentTxns.forEach(exp => {
+                    const iPaid = exp.payer_id === userId;
+                    const amount = parseFloat(exp.amount).toFixed(2);
+                    const isSettled = exp.is_settled;
+                    const dateStr = new Date(exp.created_at).toLocaleDateString().slice(0, 5); // Short date format
 
-                    html += `<div class="activity">
-                        <span>${username}</span>
-                        <span class="${color}">${text}</span>
-                    </div>`;
+                    // UX Text
+                    // If I paid: "You paid [Name]" -> Green
+                    // If I owe: "[Name] paid you" -> Red
+                    const otherId = iPaid ? exp.receiver_id : exp.payer_id;
+                    const otherName = profileMap[otherId] || 'Unknown';
+                    const color = iPaid ? 'green' : 'red';
+                    const prefix = iPaid ? '+' : '-';
+                    const descText = iPaid ? `You paid ${otherName}` : `${otherName} paid you`;
+
+                    html += `
+                        <div class="activity" style="opacity: ${isSettled ? 0.6 : 1}">
+                            <div class="d-flex flex-column">
+                                <span>${exp.description}</span>
+                                <small class="text-muted" style="font-size:0.75rem">${descText} • ${dateStr}</small>
+                            </div>
+                            <span class="${color}" style="font-weight:600">${prefix} ₹${amount}</span>
+                        </div>
+                    `;
                 });
-                friendsListEl.innerHTML = html;
+                recentListEl.innerHTML = html;
             }
         }
 
@@ -760,6 +706,7 @@ window.declineRequest = declineRequest;
 window.loadFriendRequests = loadFriendRequests;
 window.handleLogout = handleLogout;
 window.handleQuickAdd = handleQuickAdd;
+window.showTransactionHistory = showTransactionHistory;
 
 
 
@@ -819,44 +766,126 @@ async function loadFriendsInSidebar() {
     });
 }
 // Function to show transactions on the right side
-async function showTransactionHistory(friendId, friendUsername) {
-    document.getElementById('historyPlaceholder').style.display = 'none';
-    document.getElementById('historyContent').style.display = 'block';
-    document.getElementById('historyWithTitle').textContent = `History with ${friendUsername}`;
+// Pagination State
+// Pagination State moved to top
+
+// Function to show transactions on the right side
+async function showTransactionHistory(friendId, friendUsername, loadMore = false) {
+    const container = document.getElementById('transactionList');
+    const historyPlaceholder = document.getElementById('historyPlaceholder');
+    const historyContent = document.getElementById('historyContent');
+    const historyTitle = document.getElementById('historyWithTitle');
+
+    // If switching friends or first load (not clicking "Load More")
+    if (!loadMore) {
+        currentTxnPage = 0;
+        currentTxnFriendId = friendId;
+        currentTxnFriendUsername = friendUsername; // Ensure this is tracked
+        container.innerHTML = ""; // Clear previous list
+        historyPlaceholder.style.display = 'none';
+        historyContent.style.display = 'block';
+        historyTitle.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <span>History with ${friendUsername}</span>
+                <button class="btn btn-outline-success btn-sm" onclick="settleUp('${friendId}', '${friendUsername}')">
+                    <i class="bi bi-check-circle"></i> Settle Up
+                </button>
+            </div>
+        `;
+    } else {
+        // Prepare for next page
+        currentTxnPage++;
+        // Remove existing "Load More" button if it exists
+        const oldBtn = document.getElementById('btn-load-more-txns');
+        if (oldBtn) oldBtn.remove();
+    }
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     const myId = session.user.id;
+
+    // Calculate Range
+    const from = currentTxnPage * TXN_LIMIT;
+    const to = from + TXN_LIMIT - 1;
 
     // Query your Expenses table for records between you and this friend
     const { data: expenses, error } = await supabaseClient
         .from('Expenses')
         .select('*')
         .or(`and(payer_id.eq.${myId},receiver_id.eq.${friendId}),and(payer_id.eq.${friendId},receiver_id.eq.${myId})`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    const container = document.getElementById('transactionList');
-    if (expenses.length === 0) {
+    if (error) {
+        console.error("Error fetching transactions:", error);
+        container.innerHTML += `<p class="text-danger">Error loading history.</p>`;
+        return;
+    }
+
+    if (expenses.length === 0 && !loadMore) {
         container.innerHTML = "<p>No transactions yet.</p>";
         return;
     }
 
-    container.innerHTML = expenses.map(exp => {
+    if (expenses.length === 0 && loadMore) {
+        // No more transactions to load
+        // You could show a message "No more transactions" or just do nothing
+        return;
+    }
+
+    // Append new transactions
+    const newHtml = expenses.map(exp => {
         const iPaid = exp.payer_id === myId;
         const colorClass = iPaid ? 'credit' : 'debit';
         const prefix = iPaid ? "You lent" : "You owe";
+
+        let settledInfo = "";
+        let actionBtn = "";
+
+        if (exp.is_settled) {
+            settledInfo = `<div class="text-muted small"><i class="bi bi-check-all"></i> Settled</div>`;
+        } else if (exp.settled_amount > 0) {
+            settledInfo = `<div class="text-info small">Partial: ${exp.settled_amount} paid</div>`;
+        }
+
+        if (!exp.is_settled && iPaid) {
+            actionBtn = `
+                <button class="btn btn-sm btn-outline-primary ms-2" onclick="settleTransaction('${exp.id}')">
+                    Settle
+                </button>
+            `;
+        }
 
         return `
             <div class="transaction-card ${exp.is_settled ? 'settled' : ''}">
                 <div class="info">
                     <strong>${exp.description}</strong>
                     <small>${new Date(exp.created_at).toLocaleDateString()}</small>
+                    ${settledInfo}
                 </div>
-                <div class="amount ${colorClass}">
-                    ${prefix} Rs.${exp.amount}
+                <div class="d-flex align-items-center">
+                    <div class="amount ${colorClass}">
+                        ${prefix} Rs.${exp.amount}
+                    </div>
+                    ${actionBtn}
                 </div>
             </div>
         `;
     }).join('');
+
+    container.insertAdjacentHTML('beforeend', newHtml);
+
+    // If we got a full page, likely there are more transactions. Show "Load More" button.
+    if (expenses.length === TXN_LIMIT) {
+        const btnHtml = `
+            <div class="text-center mt-3">
+                <button id="btn-load-more-txns" class="btn btn-outline-secondary btn-sm" 
+                    onclick="showTransactionHistory('${friendId}', '${friendUsername}', true)">
+                    Load More
+                </button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', btnHtml);
+    }
 }
 
 
@@ -953,7 +982,8 @@ async function performAILog() {
 
 
 // 3. Trigger on Button Click
-syncBtn.addEventListener('click', performAILog);
+// 3. Trigger on Button Click - handled at bottom
+// syncBtn.addEventListener('click', performSync);
 
 // 4. Trigger on 'Enter' key for better UX
 geminiInput.addEventListener('keypress', (e) => {
@@ -994,6 +1024,9 @@ async function performSync() {
         alert(`Success! Logged ₹${data.final_amount} for ${data.target_username}`);
         geminiInput.value = "";
 
+        // Refresh dashboard to show new totals immediately
+        fetchDashboardData();
+
     } catch (err) {
         console.error("Sync Error:", err);
         alert("Sync failed: " + err.message);
@@ -1006,6 +1039,63 @@ async function performSync() {
         }
     }
 }
+
+async function settleUp(friendId, friendName) {
+    if (!confirm(`Are you sure you want to settle all expenses with ${friendName}?`)) {
+        return;
+    }
+
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const myId = session.user.id;
+
+        const { error } = await supabaseClient.rpc('settle_all_between_friends', {
+            user_a: myId,
+            user_b: friendId
+        });
+
+        if (error) {
+            console.error("Settlement Error:", error);
+            alert("Failed to settle up: " + error.message);
+            return;
+        }
+
+        alert(`All cleaned up with ${friendName}!`);
+
+        // Refresh everything
+        showTransactionHistory(friendId, friendName); // Reload history (should show settled or empty)
+        fetchDashboardData(); // Update balances
+
+    } catch (err) {
+        console.error("Error settling up:", err);
+        alert("An error occurred.");
+    }
+}
+
+async function settleTransaction(txnId) {
+    if (!confirm("Mark this transaction as fully settled?")) return;
+
+    try {
+        const { error } = await supabaseClient.rpc('settle_transaction', { txn_id: txnId });
+
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            // Refresh
+            // We need to know which friend page we are on to reload properly
+            // stored in global: currentTxnFriendId, currentTxnFriendUsername
+            if (currentTxnFriendId && currentTxnFriendUsername) {
+                showTransactionHistory(currentTxnFriendId, currentTxnFriendUsername);
+                fetchDashboardData();
+            }
+        }
+    } catch (err) {
+        console.error("Settle txn error:", err);
+    }
+}
+window.settleTransaction = settleTransaction;
+
+window.settleUp = settleUp;
 
 // --- 4. VOICE RECOGNITION (MIC BUTTON) ---
 function startVoiceLogic() {
@@ -1060,3 +1150,97 @@ geminiInput.addEventListener('keypress', (e) => {
 });
 
 
+
+
+// --- 6. Quick Add Expense Logic ---
+let quickAddSelectedFriendId = null;
+
+window.searchFriendsForExpense = async function (query) {
+    const list = document.getElementById('quick-friends-dropdown');
+    if (!query) {
+        list.style.display = 'none';
+        return;
+    }
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+
+    // Use the RPC 'search_users_by_username'
+    const { data: users, error: searchError } = await supabaseClient.rpc(
+        "search_users_by_username",
+        { search_query: query }
+    );
+
+    if (searchError) {
+        console.error(searchError);
+        return;
+    }
+
+    list.innerHTML = '';
+    if (users && users.length > 0) {
+        list.style.display = 'block';
+        users.forEach(u => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action';
+            li.style.cursor = 'pointer';
+            li.textContent = u.username;
+            li.onclick = () => {
+                document.getElementById('quick-name').value = u.username;
+                quickAddSelectedFriendId = u.id;
+                list.style.display = 'none';
+            };
+            list.appendChild(li);
+        });
+    } else {
+        list.style.display = 'none';
+    }
+}
+
+window.handleQuickAdd = async function () {
+    const name = document.getElementById('quick-name').value;
+    const amount = parseFloat(document.getElementById('quick-amount').value);
+    const desc = document.getElementById('quick-desc').value;
+
+    if (!name || !quickAddSelectedFriendId) {
+        alert("Please select a friend from the list.");
+        return;
+    }
+    if (!amount || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+    if (!desc) {
+        alert("Please enter a description.");
+        return;
+    }
+
+    // Add Expense Logic
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        // Use create_expense_automated
+        const { error } = await supabaseClient.rpc('create_expense_automated', {
+            p_description: desc,
+            p_amount: amount,
+            p_payer_id: session.user.id, // I paid
+            p_receiver_id: quickAddSelectedFriendId
+        });
+
+        if (error) throw error;
+
+        alert("Expense added successfully!");
+
+        // Clear inputs
+        document.getElementById('quick-name').value = '';
+        document.getElementById('quick-amount').value = '';
+        document.getElementById('quick-desc').value = '';
+        quickAddSelectedFriendId = null; // Reset
+
+        // Refresh Dashboard
+        fetchDashboardData();
+
+    } catch (err) {
+        console.error("Quick Add Error:", err);
+        alert("Failed to add expense: " + err.message);
+    }
+}

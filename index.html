@@ -84,21 +84,21 @@
                     <div class="stat-card">
                         <div class="icon green"><i class="bi bi-wallet2"></i></div>
                         <p class="title">Total Balance</p>
-                        <h2 class="green" id="dashboard-total-balance">₹2,450</h2>
+                        <h2 class="green" id="dashboard-total-balance">...</h2>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="icon red"><i class="bi bi-arrow-down-circle"></i></div>
                         <p class="title">You Owe</p>
-                        <h2 class="red" id="dashboard-owe">₹1,200</h2>
+                        <h2 class="red" id="dashboard-owe">...</h2>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="icon blue"><i class="bi bi-arrow-up-circle"></i></div>
                         <p class="title">You Are Owed</p>
-                        <h2 class="blue" id="dashboard-owed">₹3,650</h2>
+                        <h2 class="blue" id="dashboard-owed">...</h2>
                     </div>
                 </div>
             </div>
@@ -134,18 +134,7 @@
             <!-- Recent Activity / Friend Balances -->
             <h5 class="mt-5 mb-3">Recent Activity</h5>
             <div id="dashboard-friends-list">
-                <div class="activity">
-                    <span>Dinner with friends</span>
-                    <span class="green">+ ₹350</span>
-                </div>
-                <div class="activity">
-                    <span>Cab split</span>
-                    <span class="green">+ ₹350</span>
-                </div>
-                <div class="activity">
-                    <span>Movie night</span>
-                    <span class="green">+ ₹350</span>
-                </div>
+                <div class="text-center text-muted p-3">Loading...</div>
             </div>
 
             <footer class="fixed-bottom bg-dark p-3 text-center border-top border-secondary">
@@ -258,6 +247,11 @@
     <script>
         // Toggle between dark and light theme
         function toggleTheme() {
+            // Toggle body class for global CSS rules
+            document.body.classList.toggle('dark');
+            document.body.classList.toggle('light');
+
+            // Also toggle page specific IDs for legacy support (if needed)
             const dashboard = document.getElementById('page-dashboard');
             const navbar = document.getElementById('nav');
             const friends = document.getElementById('page-friends');
