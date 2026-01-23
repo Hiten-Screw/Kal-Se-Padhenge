@@ -67,6 +67,68 @@ body.light .list-group-item {
   background-color: #007bff !important;
 }
 
+/* === FOOTER STYLES === */
+/* Prevents content from being hidden behind fixed footer */
+#page-dashboard .container {
+  padding-bottom: 120px;
+}
+
+/* Footer Theme logic */
+body.dark footer {
+  background-color: #141414;
+  border-top-color: #333 !important;
+  color: white;
+  padding: 5px !important;
+  /* Restore small padding */
+}
+
+body.dark footer .form-control {
+  background-color: #1f1f1f;
+  border-color: #17a2b8;
+  color: white;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  margin: 0 !important;
+  /* Zero margin */
+}
+
+body.light footer {
+  background-color: #ffffff;
+  border-top-color: #ddd !important;
+  color: black;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+  padding: 5px !important;
+  /* Restore small padding */
+}
+
+body.light footer .form-control {
+  background-color: #f8f9fa;
+  border-color: #17a2b8;
+  color: black;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  margin: 0 !important;
+  /* Zero margin */
+}
+
+/* Explicitly target the button inside footer if needed, but usually form-control covers inputs */
+footer .btn {
+  margin: 0 !important;
+}
+
+/* Force Input Group to have no margin/padding if not already */
+footer .input-group {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure the container inside the footer doesn't add extra height/gaps */
+footer .container {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 #page-friends.dark #historyWithTitle,
 #page-friends.dark #historyPlaceholder p {
   color: #ffffff !important;
@@ -111,50 +173,51 @@ body.light .friends-sidebar {
 }
 
 /* Search Bar Styling for Friends Page */
-#page-friends.dark .friends-header {
+/* Search Bar Styling (Inherited from Body) */
+body.dark .friends-header {
   background: #242424 !important;
   color: white !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
-#page-friends.light .friends-header {
+body.light .friends-header {
   background: white !important;
   color: black !important;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
 }
 
-#page-friends.dark .friends-header .form-control {
+body.dark .friends-header .form-control {
   background: #1f1f1f !important;
   color: white !important;
   border-color: #444 !important;
 }
 
-#page-friends.light .friends-header .form-control {
+body.light .friends-header .form-control {
   background: white !important;
   color: black !important;
   border-color: #ddd !important;
 }
 
-#page-friends.dark .friends-header .form-control::placeholder {
+body.dark .friends-header .form-control::placeholder {
   color: #aaa !important;
 }
 
-#page-friends.light .friends-header .form-control::placeholder {
+body.light .friends-header .form-control::placeholder {
   color: #666 !important;
 }
 
-#page-friends.dark .friends-header .btn-secondary {
+body.dark .friends-header .btn-secondary {
   background: #1e90ff !important;
   border-color: #1e90ff !important;
   color: white !important;
 }
 
-#page-friends.dark .friends-header .input-group {
+body.dark .friends-header .input-group {
   background: #242424 !important;
   border: 1px solid #444 !important;
 }
 
-#page-friends.light .friends-header .input-group {
+body.light .friends-header .input-group {
   background: white !important;
   border: 1px solid #ddd !important;
 }
@@ -185,32 +248,13 @@ body.light .friends-sidebar {
   max-height: 100%;
 }
 
-/* Sidebar - Light Mode Fix */
-#page-friends.light .friends-sidebar {
-  background-color: #f9f9fb !important;
-  border-right-color: #eee !important;
-  color: black !important;
-}
-
 .sidebar-section {
   padding: 15px;
   border-bottom: 1px solid #eee;
 }
 
-#page-friends.dark .friends-sidebar {
-  background-color: #242424 !important;
-  border-right-color: #333 !important;
-  color: white !important;
-}
-
-/* Text inside Sidebar (Headings) */
-#page-friends.dark .sidebar-section h3 {
-  color: white !important;
-}
-
-#page-friends.light .sidebar-section h3 {
-  color: #333 !important;
-}
+/* Sidebar Logic - Deduplicated (Already defined at top) */
+/* Just ensure no overrides exist here */
 
 /* Right Side History Area */
 .transaction-history {
@@ -222,20 +266,13 @@ body.light .friends-sidebar {
   max-height: 100%;
 }
 
-
-#page-friends.dark .friends-container {
-  background: #1f1f1f !important;
-  border-color: #333;
-}
-
-/* History Container - Dark Mode Fix */
-#page-friends.dark .transaction-history {
+/* History Container - Global Rules */
+body.dark .transaction-history {
   background: #1f1f1f !important;
   color: white !important;
 }
 
-/* History Container - Light Mode Fix */
-#page-friends.light .transaction-history {
+body.light .transaction-history {
   background: white !important;
   color: black !important;
 }
@@ -269,18 +306,19 @@ body.light .friends-sidebar {
 }
 
 /* 4. Fix the Hover/Active states in Sidebar */
-#page-friends.dark .friend-item:hover {
+/* 4. Fix the Hover/Active states in Sidebar */
+body.dark .friend-item:hover {
   background-color: #333 !important;
   color: #ffffff !important;
 }
 
-#page-friends.dark .friend-item.active {
+body.dark .friend-item.active {
   background-color: #1e90ff !important;
   /* Bright blue for the selected friend */
   color: #ffffff !important;
 }
 
-#page-friends.light .friend-item {
+body.light .friend-item {
   color: #333 !important;
   background: #f9f9fb !important;
   border: 1px solid #ddd !important;
@@ -292,11 +330,7 @@ body.light .friends-sidebar {
   font-weight: 600;
 }
 
-#page-friends.dark .friend-item:hover {
-  background: #2a2a2a !important;
-  color: white !important;
-  font-weight: 600;
-}
+/* Duplicate hover rule removed - body.dark works above */
 
 .friend-item.active {
   background: #e0e7ff !important;
@@ -304,30 +338,24 @@ body.light .friends-sidebar {
   color: #1e90ff !important;
 }
 
-#page-friends.dark .friend-item.active {
-  background: #1e90ff !important;
-  color: white !important;
-  font-weight: bold;
-}
-
-#page-friends.dark .list-group {
+body.dark .list-group {
   background: #242424 !important;
   color: white !important;
 }
 
-#page-friends.light .list-group {
+body.light .list-group {
   background: #f9f9fb !important;
   color: #333 !important;
 }
 
-#page-friends.dark .list-group-item {
+body.dark .list-group-item {
   background: #242424 !important;
   border-color: #333 !important;
   color: white !important;
   font-weight: 500;
 }
 
-#page-friends.light .list-group-item {
+body.light .list-group-item {
   background: #f9f9fb !important;
   border-color: #ddd !important;
   color: #333 !important;
@@ -517,11 +545,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 0, 0, 0.3);
   padding: 1rem !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 0;
 }
+
+/* Solid Colors for Navbar */
+body.dark .navbar {
+  background: #141414 !important;
+  /* Solid dark */
+  border-bottom: 1px solid #333;
+}
+
+body.light .navbar {
+  background: #ffffff !important;
+  /* Solid light */
+  border-bottom: 1px solid #ddd;
+}
+
+
 
 .navbar-container {
   margin: 0;
