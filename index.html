@@ -225,14 +225,38 @@
     <!-- SETTINGS PAGE -->
     <section id="page-settings" class="page" style="padding-top: 100px;">
         <div class="container mt-4">
-            <div class="stat-card">
-                <h2>User Profile</h2>
-                <p id="settings-username" class="lead">Name: Loading...</p>
-                <p id="settings-email" class="lead">Email: Loading...</p>
-                <hr>
-                <button class="btn btn-danger" onclick="alert('Delete functionality not implemented yet')">Delete
-                    Account</button>
-                <button class="btn btn-warning" onclick="handleLogout()">Logout</button>
+            <div class="stat-card glass-card profile-card">
+                <div class="profile-avatar-placeholder">
+                    <i class="bi bi-person"></i>
+                </div>
+                <!-- Username Display / Edit Section -->
+                <div class="mb-3 d-flex justify-content-center align-items-center gap-2">
+                    <div id="username-display-wrapper" class="d-flex align-items-center gap-2">
+                        <p id="settings-username" class="lead fw-bold mb-0">Loading...</p>
+                        <button class="btn btn-sm btn-link text-white p-0 ms-2" onclick="enableEditUsername()">
+                            <i class="bi bi-pencil-fill" style="font-size: 1.1rem;"></i>
+                        </button>
+                    </div>
+
+                    <div id="username-edit-wrapper" class="d-none align-items-center gap-2">
+                        <input type="text" id="username-input" class="form-control form-control-sm text-center"
+                            style="max-width: 200px;">
+                        <button class="btn btn-sm btn-success" onclick="saveUsername()">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="cancelEditUsername()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="settings-email" class="text-white-50 mb-4">Loading...</p>
+
+                <div class="settings-btn-group">
+                    <button class="btn btn-warning px-4" onclick="handleLogout()">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </div>
             </div>
         </div>
     </section>

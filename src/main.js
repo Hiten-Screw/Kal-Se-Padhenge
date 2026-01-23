@@ -432,7 +432,7 @@ async function fetchSettingsData() {
         // Set Email
         const emailEl = document.getElementById('settings-email');
         if (emailEl) {
-            emailEl.textContent = `Email: ${session.user.email}`;
+            emailEl.textContent = session.user.email;
         }
 
         // Fetch user profile directly from Supabase
@@ -451,9 +451,9 @@ async function fetchSettingsData() {
         const usernameEl = document.getElementById('settings-username');
         if (usernameEl) {
             if (profile && profile.username) {
-                usernameEl.textContent = `Name: ${profile.username}`;
+                usernameEl.textContent = profile.username;
             } else {
-                usernameEl.textContent = `Name: (Not Set)`;
+                usernameEl.textContent = '(Not Set)';
             }
         }
 
@@ -462,6 +462,7 @@ async function fetchSettingsData() {
     }
 }
 
+//logout
 //logout
 window.handleLogout = async function () {
     const { error } = await supabaseClient.auth.signOut();
@@ -472,6 +473,115 @@ window.handleLogout = async function () {
         window.location.reload();
     }
 };
+
+// --- USERNAME EDIT FEATURE ---
+window.enableEditUsername = function () {
+    const displayWrapper = document.getElementById('username-display-wrapper');
+    const editWrapper = document.getElementById('username-edit-wrapper');
+    const nameEl = document.getElementById('settings-username');
+    const inputEl = document.getElementById('username-input');
+
+    if (displayWrapper && editWrapper && nameEl && inputEl) {
+        // Extract just the name from "Name: Alice"
+        const currentName = nameEl.textContent.replace('Name: ', '').trim();
+        inputEl.value = currentName === '(Not Set)' ? '' : currentName;
+
+        displayWrapper.classList.remove('d-flex');
+        displayWrapper.classList.add('d-none');
+
+        editWrapper.classList.remove('d-none');
+        editWrapper.classList.add('d-flex');
+
+        inputEl.focus();
+    }
+};
+
+window.cancelEditUsername = function () {
+    const displayWrapper = document.getElementById('username-display-wrapper');
+    const editWrapper = document.getElementById('username-edit-wrapper');
+
+    if (displayWrapper && editWrapper) {
+        editWrapper.classList.remove('d-flex');
+        editWrapper.classList.add('d-none');
+
+        displayWrapper.classList.remove('d-none');
+        displayWrapper.classList.add('d-flex');
+    }
+};
+
+window.saveUsername = async function () {
+    const inputEl = document.getElementById('username-input');
+    const newUsername = inputEl.value.trim();
+
+    if (!newUsername) {
+        alert("Username cannot be empty.");
+        return;
+    }
+
+    if (newUsername.length < 3) {
+        alert("Username must be at least 3 characters.");
+        return;
+    }
+
+    // Prepare UI
+    const saveBtn = document.querySelector('#username-edit-wrapper .btn-success');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    }
+
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error("Not logged in");
+
+        // 1. Check Uniqueness (Exclude self)
+        const { data: existing, error: checkError } = await supabaseClient
+            .from('Profile')
+            .select('id')
+            .eq('username', newUsername)
+            .neq('id', user.id) // Don't count myself if I didn't change it
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+
+        if (existing) {
+            alert(`The username "${newUsername}" is already taken.`);
+            resetSaveBtn();
+            return;
+        }
+
+        // 2. Update Profile
+        const { error: updateError } = await supabaseClient
+            .from('Profile')
+            .update({ username: newUsername })
+            .eq('id', user.id);
+
+        if (updateError) throw updateError;
+
+        // 3. Success Update UI
+        const nameEl = document.getElementById('settings-username');
+        if (nameEl) nameEl.textContent = `Name: ${newUsername}`;
+
+        // Return to display mode
+        window.cancelEditUsername();
+        alert("Username updated successfully!");
+
+    } catch (err) {
+        console.error("Error updating username:", err);
+        alert("Failed to update username: " + err.message);
+    } finally {
+        resetSaveBtn();
+    }
+
+    function resetSaveBtn() {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        }
+    }
+};
+
+
 
 /*SUPABASE SETUP*/
 
