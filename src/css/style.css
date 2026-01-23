@@ -790,63 +790,130 @@ body.light .navbar {
 }
 
 /* ===== LOGIN PAGE (via class) ===== */
+/* ===== LOGIN PAGE (Modern Redesign) ===== */
 .page-login {
   height: 100vh;
   width: 100%;
-}
-
-.quotes {
-  font-family: "Baloo Bhai 2", sans-serif;
-  font-size: 40px;
-}
-
-.h {
-  font-family: Georgia, 'Times New Roman', Times, serif;
-  font-style: italic;
-  font-size: 40px;
-  color: white;
-}
-
-.quotes ul li::before {
-  content: '✔';
-  color: #1ce0a2;
-  margin-right: 10px;
-}
-
-.quotes {
-  color: rgb(11, 10, 0);
-}
-
-.quotes ul {
-  list-style: none;
   padding: 0;
-  margin: 30px;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
-#btn {
+.login-wrapper {
+  background: radial-gradient(circle at top right, #1e90ff, #141414 40%),
+    radial-gradient(circle at bottom left, #005eff, #141414 50%);
+  background-color: #141414;
+  height: 100vh;
+  width: 100%;
+  display: flex;
   align-items: center;
-  padding: 13px 24px;
-  margin: auto;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-container {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 50px;
+}
+
+.login-left {
+  flex: 1;
+  padding-left: 50px;
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.login-logo-corner {
+  position: absolute;
+  top: 40px;
+  left: 50px;
+  width: 220px;
+  /* Slightly larger */
+  z-index: 10;
+}
+
+/* Glass Panel Styles */
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  /* Ultra subtle glass */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  width: 100%;
+  padding: 60px 40px !important;
+}
+
+/* Mobile Responsiveness */
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+  .login-container {
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    margin-top: 60px;
+    /* Space for logo in responsive mode if absolute, or just flow */
+  }
+
+  /* Center the logo on mobile and stack it */
+  .login-logo-corner {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 180px;
+    margin-bottom: 30px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .login-left {
+    padding-left: 0;
+    margin-bottom: 30px;
+  }
+}
+
+/* Override Bootstrap utils within login scope */
+.text-info {
+  color: #1e90ff !important;
+}
+
+/* Google Button Standard Style */
+.google-btn {
+  background-color: white !important;
+  color: #3c4043 !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 4px !important;
+  /* Standard Google radius is usually pill or 4px, sticking to slightly rounded */
+  padding: 12px 24px !important;
+  font-family: 'Roboto', 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  transition: background-color 0.2s, box-shadow 0.2s;
   font-size: 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1e90ff, #005eff);
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: white;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-#btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(30, 144, 255, 0.4);
+.google-btn:hover {
+  background-color: #f8faff !important;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15) !important;
 }
 
-#btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.google-btn:active {
+  background-color: #f1f3f4 !important;
+  box-shadow: none !important;
 }
+
+/* ===== PAGE VISIBILITY ===== */
 
 /* ===== PAGE VISIBILITY ===== */
 .page {
