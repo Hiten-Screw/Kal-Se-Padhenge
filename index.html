@@ -25,8 +25,8 @@
     <script>
         // Add your Supabase credentials here for local testing
         // In production, these will be fetched from /api/config
-        window.SUPABASE_URL = window.SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-        window.SUPABASE_KEY = window.SUPABASE_KEY || 'your-supabase-anon-key';
+        // window.SUPABASE_URL = window.SUPABASE_URL || 'https://qnyhmfndmtwkoofvufaa.supabase.co';
+        // window.SUPABASE_KEY = window.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFueWhtZm5kbXR3a29vZnZ1ZmFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NTc4MTEsImV4cCI6MjA4NDEzMzgxMX0.1I2CadOZN7gC-QdKgm2BXVEH9RPcI4reB9o99RPnTmY';
     </script>
 
     <!-- LOGIN PAGE -->
@@ -154,6 +154,27 @@
                 </div>
             </div>
 
+            <footer class="fixed-bottom bg-dark p-3 text-center border-top border-secondary">
+                <div class="container">
+                    <div class="input-group">
+                        <button id="voice-btn" class="btn btn-outline-info rounded-start-pill px-3"
+                            title="Speak Expense">
+                            <i class="bi bi-mic-fill"></i>
+                        </button>
+
+                        <input type="text" id="gemini-query" class="form-control bg-dark text-white border-info"
+                            placeholder="I paid 500 to Rahul for Dinner">
+
+                        <button id="btn-sync-expense" class="btn btn-info rounded-end-pill px-4 fw-bold">
+                            <span id="sync-spinner" class="spinner-border spinner-border-sm d-none"
+                                role="status"></span>
+                            <span id="sync-text">Sync</span>
+                        </button>
+                    </div>
+                    <small class="text-secondary mt-1 d-block">Powered by Gemini NLP</small>
+                </div>
+            </footer>
+
             <!-- Investments Section -->
             <div class="mt-5 mb-5">
                 <h4 class="text-white mb-3">💡 Investment Opportunities</h4>
@@ -230,14 +251,14 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="page fixed-bottom bg-dark p-3 text-center">
+    <!-- <footer class="page fixed-bottom bg-dark p-3 text-center">
         <div class="d-flex justify-content-center gap-2">
             <button id="voice-btn" class="btn btn-outline-info rounded-circle"><i class="bi bi-mic"></i></button>
             <input type="text" id="gemini-query" class="form-control w-50"
                 placeholder="Tell Gemini: I paid 500 for lunch with Abhi">
             <button id="btn-sync-expense" class="btn btn-info">Sync</button>
         </div>
-    </footer>
+    </footer> -->
 
     <script src="src/main.js"></script>
     <script>
