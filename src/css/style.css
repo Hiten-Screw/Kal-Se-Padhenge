@@ -198,27 +198,49 @@ body.light .friends-sidebar {
 /* Search Bar Styling for Friends Page */
 /* Search Bar Styling (Inherited from Body) */
 body.dark .friends-header {
-  background: #242424 !important;
-  color: white !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  background: transparent !important;
+  /* Fix sharp edge */
+  box-shadow: none !important;
+  margin-bottom: 20px;
 }
 
 body.light .friends-header {
-  background: white !important;
-  color: black !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Glass Pill Style for Input Group */
+body.dark .friends-header .input-group {
+  background: rgba(40, 40, 40, 0.7) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50px;
+  /* Pill Shape */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  padding: 4px;
+}
+
+body.light .friends-header .input-group {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #ddd !important;
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  padding: 4px;
 }
 
 body.dark .friends-header .form-control {
-  background: #1f1f1f !important;
+  background: transparent !important;
   color: white !important;
-  border-color: #444 !important;
+  border: none !important;
+  padding-left: 20px;
 }
 
 body.light .friends-header .form-control {
-  background: white !important;
+  background: transparent !important;
   color: black !important;
-  border-color: #ddd !important;
+  border: none !important;
+  padding-left: 20px;
 }
 
 body.dark .friends-header .form-control::placeholder {
@@ -231,18 +253,13 @@ body.light .friends-header .form-control::placeholder {
 
 body.dark .friends-header .btn-secondary {
   background: #1e90ff !important;
-  border-color: #1e90ff !important;
+  border: none !important;
   color: white !important;
-}
-
-body.dark .friends-header .input-group {
-  background: #242424 !important;
-  border: 1px solid #444 !important;
-}
-
-body.light .friends-header .input-group {
-  background: white !important;
-  border: 1px solid #ddd !important;
+  border-radius: 50px;
+  /* Match pill shape */
+  padding-left: 25px;
+  padding-right: 25px;
+  margin: 2px;
 }
 
 #page-friends.dark .friends-header .input-group svg {
@@ -336,10 +353,11 @@ body.light .transaction-history {
 }
 
 #page-friends.dark .friend-item.active {
-  background-color: rgba(30, 144, 255, 0.15) !important;
+  background-color: rgba(30, 144, 255, 0.2) !important;
   color: #ffffff !important;
-  border-left: 4px solid #1e90ff !important;
-  /* Modern accent strip */
+  border: 1px solid rgba(30, 144, 255, 0.5) !important;
+  border-radius: 12px !important;
+  /* Slightly rounded, not pill */
 }
 
 /* 4. Fix the Hover/Active states in Sidebar */
@@ -374,8 +392,9 @@ body.light .friend-item {
   background: #e0e7ff !important;
   font-weight: 600;
   color: #1e90ff !important;
-  border-left: 4px solid #1e90ff !important;
-  border: none !important;
+  border: 1px solid #1e90ff !important;
+  border-radius: 12px !important;
+  /* Slightly rounded */
 }
 
 body.dark .list-group {
@@ -403,15 +422,25 @@ body.light .list-group-item {
 }
 
 /* Styling for the history cards on the right side */
+/* Styling for the history cards on the right side */
 .transaction-card {
   display: flex;
+  align-items: center;
+  /* Ensure vertical alignment */
   justify-content: space-between;
   padding: 15px;
   margin-bottom: 10px;
   border-radius: 8px;
   border-left: 5px solid #ccc;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: background 0.3s ease;
+  /* Slight blue shade/glow from behind as requested */
+  box-shadow: 0 4px 15px rgba(30, 144, 255, 0.15);
+  border: 1px solid rgba(30, 144, 255, 0.1);
+  /* Subtle definition */
+  transition: all 0.3s ease;
+}
+
+.transaction-card .info {
+  margin-right: 15px;
 }
 
 .transaction-card.settled {

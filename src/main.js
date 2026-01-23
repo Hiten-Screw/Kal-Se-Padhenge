@@ -815,9 +815,69 @@ window.inviteFriend = inviteFriend;
 window.acceptRequest = acceptRequest;
 window.declineRequest = declineRequest;
 window.loadFriendRequests = loadFriendRequests;
+window.loadFriendRequests = loadFriendRequests;
 window.handleLogout = handleLogout;
 window.handleQuickAdd = handleQuickAdd;
 window.showTransactionHistory = showTransactionHistory;
+
+async function handleQuickAdd() {
+    const nameInput = document.getElementById('quick-name');
+    const amountInput = document.getElementById('quick-amount');
+    const descInput = document.getElementById('quick-desc');
+    const btn = document.getElementById('btn-quick-add');
+
+    const targetUsername = nameInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const description = descInput.value.trim();
+
+    if (!targetUsername || !amount || !description) {
+        alert("Please fill in all fields (Name, Amount, Description)");
+        return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid positive amount");
+        return;
+    }
+
+    try {
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) throw new Error("Not logged in");
+
+        const { error } = await supabaseClient.rpc('create_expense_automated', {
+            sender_id: session.user.id,
+            target_username: targetUsername,
+            final_amount: amount,
+            expense_description: description
+        });
+
+        if (error) throw error;
+
+        // Success!
+        alert("Expense added successfully!");
+
+        // Clear inputs
+        nameInput.value = "";
+        amountInput.value = "";
+        descInput.value = "";
+
+        // Hide section
+        document.getElementById('quick-add-section').style.display = 'none';
+
+        // Refresh Data
+        fetchDashboardData();
+
+    } catch (err) {
+        console.error("Quick Add Error:", err);
+        alert("Failed to add expense: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Pay / Split";
+    }
+}
 
 
 
