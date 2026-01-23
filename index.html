@@ -39,8 +39,8 @@
         </div>
     </div>
 
-    <!-- APP NAVIGATION TABS (Visible on non-login pages) -->
-    <div id="nav" class="page navbar-container" style="display:none; padding-bottom: 0; margin-bottom: 0;">
+    <!-- APP NAVIGATION HEADER (Visible on non-login pages) -->
+    <header id="app-header" class="fixed-top" style="display:none;">
         <!-- Navbar Header (Replaces separate logo div) -->
         <nav class="navbar px-4 py-3">
             <div class="logo-container">
@@ -64,13 +64,13 @@
                 </button>
             </div>
         </nav>
-    </div>
+    </header>
 
 
     <!-- DASHBOARD PAGE -->
-    <div class="page app dark" id="page-dashboard">
+    <div class="page" id="page-dashboard" style="padding-top: 100px;">
         <!-- Dashboard Content -->
-        <div class="container">
+        <div class="container pb-5">
             <!-- Add Expense Button -->
             <div class="d-flex justify-content-end mb-4 pt-4">
                 <button class="btn btn-primary d-flex align-items-center gap-2"
@@ -137,15 +137,15 @@
                 <div class="text-center text-muted p-3">Loading...</div>
             </div>
 
-            <footer class="fixed-bottom bg-dark p-3 text-center border-top border-secondary">
+            <footer class="fixed-bottom p-0 text-center border-top">
                 <div class="container">
-                    <div class="input-group">
+                    <div class="input-group mb-0">
                         <button id="btn-voice-input" type="button" class="btn btn-outline-info rounded-start-pill px-3"
                             title="Speak Expense">
                             <i class="bi bi-mic-fill"></i>
                         </button>
 
-                        <input type="text" id="gemini-query" class="form-control bg-dark text-white border-info"
+                        <input type="text" id="gemini-query" class="form-control border-info"
                             placeholder="Rahul owe 1000 for Dinner">
 
                         <button id="btn-sync-expense" class="btn btn-info rounded-end-pill px-4 fw-bold">
@@ -154,36 +154,16 @@
                             <span id="sync-text">Sync</span>
                         </button>
                     </div>
-                    <small class="text-secondary mt-1 d-block">Powered by Gemini NLP</small>
                 </div>
             </footer>
 
-            <!-- Investments Section -->
-            <div class="mt-5 mb-5">
-                <h4 class="text-white mb-3">💡 Investment Opportunities</h4>
-                <p class="text-muted">"Don't save what is left after spending; spend what is left after saving." –
-                    Warren Buffett</p>
-                <div class="d-flex gap-3 mt-3">
-                    <a href="https://groww.in/mutual-funds" target="_blank" title="Mutual Funds">
-                        <img src='public/assets/stock.jpg' alt='mutual-funds' width='60' class="rounded"
-                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
-                    </a>
-                    <a href="https://www.ibullion.in/" target="_blank" title="Gold">
-                        <img src='public/assets/gold.jpg' alt='gold' width='60' class="rounded"
-                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
-                    </a>
-                    <a href="https://www.coinbase.com/" target="_blank" title="Cryptocurrency">
-                        <img src='public/assets/crypto.jpg' alt='crypto' width='60' class="rounded"
-                            style="cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">
-                    </a>
-                </div>
-            </div>
+
 
         </div>
     </div>
 
     <!-- FRIENDS PAGE -->
-    <section id="page-friends" class="page">
+    <section id="page-friends" class="page" style="padding-top: 100px;">
         <div class="container mt-4">
             <div class="friends-header mb-3">
                 <div class="input-group">
@@ -219,7 +199,7 @@
     </section>
 
     <!-- SETTINGS PAGE -->
-    <section id="page-settings" class="page">
+    <section id="page-settings" class="page" style="padding-top: 100px;">
         <div class="container mt-4">
             <div class="stat-card">
                 <h2>User Profile</h2>
@@ -251,28 +231,7 @@
             document.body.classList.toggle('dark');
             document.body.classList.toggle('light');
 
-            // Also toggle page specific IDs for legacy support (if needed)
-            const dashboard = document.getElementById('page-dashboard');
-            const navbar = document.getElementById('nav');
-            const friends = document.getElementById('page-friends');
-            const settings = document.getElementById('page-settings');
-
-            if (dashboard) {
-                dashboard.classList.toggle('dark');
-                dashboard.classList.toggle('light');
-            }
-            if (navbar) {
-                navbar.classList.toggle('dark');
-                navbar.classList.toggle('light');
-            }
-            if (friends) {
-                friends.classList.toggle('dark');
-                friends.classList.toggle('light');
-            }
-            if (settings) {
-                settings.classList.toggle('dark');
-                settings.classList.toggle('light');
-            }
+            // Legacy individual ID toggling removed in favor of global body class
         }
 
         // Simple function to toggle quick add if needed elsewhere

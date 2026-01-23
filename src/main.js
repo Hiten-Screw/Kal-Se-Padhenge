@@ -188,7 +188,8 @@ async function initApp() {
 
 function handleLoginSuccess(session) {
     document.querySelector('.page-login').style.display = 'none';
-    document.getElementById('nav').style.display = 'block';
+    const appHeader = document.getElementById('app-header');
+    if (appHeader) appHeader.style.display = 'block';
 
     // TRIGGER PROFILE CREATION IMMEDIATELY
     // This ensures the user exists in the DB even if they don't visit Settings
