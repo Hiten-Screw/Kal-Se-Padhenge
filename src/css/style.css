@@ -8,22 +8,24 @@
   /* Remove hardcoded background: white; */
 }
 
-#page-friends.dark .friends-container {
+/* Global Dark Mode Override based on BODY class which is always reliable */
+body.dark .friends-container {
   background: #1f1f1f !important;
   border-color: #333;
 }
 
 /* If history background is dark, text MUST be white */
-#page-friends.dark .transaction-history {
+/* If history background is dark, text MUST be white */
+body.dark .transaction-history {
   background-color: #1f1f1f !important;
 }
 
-#page-friends.dark .transaction-card .info strong {
+body.dark .transaction-card .info strong {
   color: #ffffff !important;
   font-weight: 600;
 }
 
-#page-friends.dark .friend-item.active {
+body.dark .friend-item.active {
   background-color: #007bff !important;
   color: #ffffff !important;
   border: 1px solid #0056b3 !important;
@@ -34,32 +36,28 @@
   /* Light grey for the date */
 }
 
-/* --- DARK MODE SIDEBAR (White background in your inverted layout) --- */
-#page-friends.dark .friends-sidebar h3 {
-  color: #000000 !important;
-  /* Forces "Pending Requests" & "Your Friends" to Black */
+/* --- DARK MODE SIDEBAR (Refactored) --- */
+body.dark .friends-sidebar h3 {
+  color: #ffffff !important;
   font-weight: 800;
   margin-bottom: 15px;
 }
 
-#page-friends.dark .friend-item,
-#page-friends.dark .list-group-item {
-  color: #1a1a1a !important;
-  /* Forces Friend Names to a very dark grey/black */
+body.dark .friend-item,
+body.dark .list-group-item {
+  color: #eeeeee !important;
   font-weight: 600;
 }
 
-/* --- LIGHT MODE SIDEBAR (Black background in your inverted layout) --- */
-#page-friends.light .friends-sidebar h3 {
-  color: #ffffff !important;
-  /* Forces Headers to White */
+/* --- LIGHT MODE SIDEBAR (Refactored) --- */
+body.light .friends-sidebar h3 {
+  color: #333333 !important;
   font-weight: 800;
 }
 
-#page-friends.light .friend-item,
-#page-friends.light .list-group-item {
-  color: #f0f0f0 !important;
-  /* Forces Friend Names to White */
+body.light .friend-item,
+body.light .list-group-item {
+  color: #333333 !important;
   font-weight: 600;
 }
 
@@ -82,15 +80,15 @@ body.app.light .friends-container {
 }
 
 /* If sidebar is white, text MUST be dark */
-#page-friends.dark .friends-sidebar {
-  background-color: #ffffff !important;
+/* Sidebar Backgrounds - strict enforcement using BODY class */
+body.dark .friends-sidebar {
+  background-color: #242424 !important;
+  border-right-color: #333 !important;
 }
 
-#page-friends.dark .friends-sidebar h3,
-#page-friends.dark .friends-sidebar .friend-item,
-#page-friends.dark .friends-sidebar .list-group-item {
-  color: #000000 !important;
-  /* Forces black text on the white sidebar */
+body.light .friends-sidebar {
+  background-color: #ffffff !important;
+  border-right-color: #ddd !important;
 }
 
 #page-friends.dark {
@@ -183,6 +181,8 @@ body.app.light .friends-container {
   flex-direction: column;
   overflow-y: auto;
   background-color: #f9f9fb;
+  height: 100%;
+  max-height: 100%;
 }
 
 /* Sidebar - Light Mode Fix */
@@ -218,6 +218,8 @@ body.app.light .friends-container {
   padding: 20px;
   overflow-y: auto;
   transition: background 0.3s ease;
+  height: 100%;
+  max-height: 100%;
 }
 
 
